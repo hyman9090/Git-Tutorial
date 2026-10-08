@@ -1,0 +1,1893 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Git 完全教學 — 常用指令、旗標變化與圖解</title>
+<style>
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:16px}
+:root{
+  --bg:#f6f7f9; --panel:#ffffff; --ink:#1f2328; --muted:#5a6472; --line:#e3e6ea;
+  --hover:#eef1f4; --accent:#0969da; --accent-soft:#e8f1fd;
+  --code-bg:#0d1117; --code-head:#161b22; --code-ink:#e6edf3;
+  --tip-bg:#e9f5ec; --tip-line:#1a7f37; --warn-bg:#fff6e0; --warn-line:#bf8700;
+  --danger-bg:#ffebe9; --danger-line:#cf222e; --note-bg:#eef1f6; --note-line:#57606a;
+  --c-main:#2563eb; --c-feat:#16a34a; --c-fix:#ea580c; --c-hot:#dc2626; --c-purple:#7c3aed;
+}
+[data-theme="dark"]{
+  --bg:#0d1117; --panel:#161b22; --ink:#e6edf3; --muted:#8b98a9; --line:#2d333b;
+  --hover:#21262e; --accent:#4493f8; --accent-soft:#12233d;
+  --code-bg:#010409; --code-head:#161b22; --code-ink:#e6edf3;
+  --tip-bg:#0e2416; --tip-line:#3fb950; --warn-bg:#2b2105; --warn-line:#d29922;
+  --danger-bg:#2d0c0e; --danger-line:#f85149; --note-bg:#1c2128; --note-line:#8b98a9;
+}
+body{margin:0;background:var(--bg);color:var(--ink);font-size:15.5px;line-height:1.8;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft JhengHei","PingFang TC","Noto Sans TC",sans-serif}
+a{color:var(--accent);text-decoration:none}
+code,kbd{font-family:"Cascadia Code","JetBrains Mono",Consolas,"Courier New",monospace}
+p code,li code,td code,h3 code,h4 code{background:var(--accent-soft);color:var(--accent);
+  padding:1px 6px;border-radius:6px;font-size:.88em;white-space:nowrap}
+[data-theme="dark"] p code,[data-theme="dark"] li code,[data-theme="dark"] td code{color:#79b8ff}
+kbd{background:var(--panel);border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;padding:1px 7px;font-size:.85em}
+
+/* ---------- layout ---------- */
+.sidebar{position:fixed;top:0;left:0;bottom:0;width:284px;overflow-y:auto;background:var(--panel);
+  border-right:1px solid var(--line);padding:16px 14px 80px;z-index:60}
+.sidebar .brand{font-weight:700;font-size:17px;padding:4px 10px 12px;display:flex;align-items:center;gap:8px}
+.sidebar .brand svg{flex:none}
+#navfilter{width:100%;padding:7px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);
+  color:var(--ink);font-size:13.5px;margin:2px 0 8px;outline:none}
+.nav-group{margin:16px 0 2px;padding:0 10px;font-size:11.5px;letter-spacing:.1em;color:var(--muted);font-weight:700}
+.sidebar nav a{display:block;padding:3.5px 10px;border-radius:7px;color:var(--ink);font-size:13.8px;line-height:1.5}
+.sidebar nav a:hover{background:var(--hover)}
+.sidebar nav a.active{background:var(--accent);color:#fff}
+.sidebar nav a.hidden{display:none}
+.main{margin-left:284px;padding:36px 52px 140px;max-width:1120px}
+.topline{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+#themeBtn,#topBtn{cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--ink);
+  border-radius:8px;padding:6px 14px;font-size:13px}
+#topBtn{position:fixed;right:22px;bottom:22px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:70}
+#topBtn.show{opacity:.9;pointer-events:auto}
+@media(max-width:960px){
+  .sidebar{position:static;width:auto;border-right:0;border-bottom:1px solid var(--line);max-height:none}
+  .main{margin-left:0;padding:22px 18px 120px}
+}
+
+/* ---------- content ---------- */
+h1{font-size:30px;line-height:1.3;margin:8px 0 4px}
+.subtitle{color:var(--muted);margin-top:0}
+h2.sec-title{font-size:23px;margin:0 0 6px;padding-top:8px;border-bottom:2px solid var(--line);padding-bottom:10px}
+h2.sec-title .anchor,h3 .anchor{opacity:0;color:var(--muted);font-weight:400;margin-left:6px;font-size:.8em}
+h2.sec-title:hover .anchor,h3:hover .anchor{opacity:1}
+section.sec{margin:64px 0 0}
+.sec-lead{color:var(--muted);margin:10px 0 26px;max-width:760px}
+.cmd{border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:6px 26px 22px;margin:26px 0}
+.cmd h3{font-size:19px;margin:16px 0 4px}
+.cmd h3 .num{color:var(--muted);font-weight:400;font-size:14px;margin-right:8px}
+.cmd h4{font-size:15.5px;margin:22px 0 8px;color:var(--ink)}
+.lead{margin:6px 0 10px}
+.cb{border:1px solid var(--line);border-radius:10px;overflow:hidden;margin:12px 0;background:var(--code-bg)}
+.cb-head{display:flex;justify-content:space-between;align-items:center;background:var(--code-head);
+  color:#8b98a9;font-size:12px;padding:5px 8px 5px 14px;letter-spacing:.04em}
+.cb pre{margin:0;padding:14px 16px;overflow-x:auto;color:var(--code-ink);font-size:13.5px;line-height:1.65}
+.cb pre code{white-space:pre}
+.copy{cursor:pointer;background:transparent;border:1px solid #30363d;color:#8b98a9;border-radius:6px;
+  padding:2px 10px;font-size:12px}
+.copy:hover{color:#e6edf3;border-color:#8b98a9}
+table.flags{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}
+table.flags th{text-align:left;padding:7px 12px;border-bottom:2px solid var(--line);color:var(--muted);
+  font-size:12.5px;letter-spacing:.05em;white-space:nowrap}
+table.flags td{padding:7px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+table.flags td:first-child{white-space:nowrap;width:1%}
+.note,.tip,.warn,.danger{border:1px solid var(--line);border-left-width:4px;border-radius:10px;
+  padding:10px 16px;margin:14px 0;font-size:14.5px}
+.note{background:var(--note-bg);border-left-color:var(--note-line)}
+.tip{background:var(--tip-bg);border-left-color:var(--tip-line)}
+.warn{background:var(--warn-bg);border-left-color:var(--warn-line)}
+.danger{background:var(--danger-bg);border-left-color:var(--danger-line)}
+.note .tag,.tip .tag,.warn .tag,.danger .tag{font-weight:700;font-size:12px;letter-spacing:.08em;display:block;margin-bottom:2px}
+.tip .tag{color:var(--tip-line)}.warn .tag{color:var(--warn-line)}.danger .tag{color:var(--danger-line)}.note .tag{color:var(--note-line)}
+
+/* ---------- diagrams ---------- */
+figure.diagram{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:20px 14px 10px;
+  margin:18px 0;text-align:center;overflow-x:auto}
+figure.diagram svg{max-width:100%;height:auto}
+figcaption{color:var(--muted);font-size:13.5px;margin-top:6px;text-align:center;line-height:1.5}
+.ba{display:flex;gap:6px;align-items:stretch;margin:18px 0}
+.ba figure.diagram{flex:1;margin:0;min-width:0}
+.ba .ba-cap{font-weight:700;font-size:13px;letter-spacing:.1em;color:var(--muted);margin-bottom:2px;display:block}
+.ba-arrow{align-self:center;font-size:26px;color:var(--muted);flex:none;padding:0 6px}
+@media(max-width:760px){.ba{flex-direction:column}.ba-arrow{transform:rotate(90deg)}}
+.legend{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;font-size:13px;color:var(--muted);margin:8px 0 0}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.dot{width:13px;height:13px;border-radius:50%;display:inline-block;border:2px solid}
+.gstep{display:inline-block;background:var(--accent-soft);color:var(--accent);border-radius:6px;
+  padding:0 8px;font-size:12px;font-weight:700;margin-right:6px}
+ul.tight li,ol.tight li{margin:3px 0}
+hr.soft{border:0;border-top:1px solid var(--line);margin:26px 0}
+.mini{font-size:13px;color:var(--muted)}
+.checklist{columns:2;column-gap:40px;font-size:14px}
+@media(max-width:760px){.checklist{columns:1}}
+@media print{.sidebar,#topBtn,#themeBtn,.copy{display:none}.main{margin:0;padding:0}}
+</style>
+</head>
+<body>
+
+<!-- shared SVG marker defs (arrowheads) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<marker id="arG" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="#8b98a9"/></marker>
+<marker id="arB" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="#2563eb"/></marker>
+<marker id="arGr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="#16a34a"/></marker>
+<marker id="arO" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="#ea580c"/></marker>
+<marker id="arR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="#dc2626"/></marker>
+<marker id="arP" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="#7c3aed"/></marker>
+</defs></svg>
+
+<aside class="sidebar">
+  <div class="brand">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="6" cy="6" r="3" fill="#f05133"/><circle cx="6" cy="18" r="3" fill="#f05133"/><circle cx="18" cy="12" r="3" fill="#f05133"/><path d="M6 9v6M18 12c0 4-6 3-9.5 4.5" stroke="#f05133" stroke-width="2"/></svg>
+    Git 完全教學
+  </div>
+  <input id="navfilter" type="text" placeholder="篩選指令… (例如 rebase)">
+  <nav id="sidenav">
+    <div class="nav-group">入門</div>
+    <a href="#concepts">基本概念（必讀）</a>
+    <a href="#help">取得幫助：-h / --help</a>
+    <a href="#config">git config 設定</a>
+    <a href="#init-clone">git init / git clone</a>
+    <div class="nav-group">基本操作</div>
+    <a href="#snapshot">status / add / commit / diff / rm / mv</a>
+    <a href="#history">git log / git show / blame / reflog</a>
+    <a href="#gitignore">.gitignore</a>
+    <div class="nav-group">分支與合併</div>
+    <a href="#branch">git branch / switch / checkout</a>
+    <a href="#merge">git merge 與衝突處理</a>
+    <a href="#rebase">git rebase（含 -i 互動模式）</a>
+    <div class="nav-group">復原與撤銷</div>
+    <a href="#undo">restore / reset / revert / clean</a>
+    <div class="nav-group">遠端協作</div>
+    <a href="#remote">remote / fetch / pull / push</a>
+    <div class="nav-group">其他工具</div>
+    <a href="#stash">git stash 暫存</a>
+    <a href="#tag">git tag 標籤</a>
+    <div class="nav-group">進階</div>
+    <a href="#advanced">cherry-pick / bisect / worktree / submodule</a>
+    <div class="nav-group">附錄</div>
+    <a href="#appendix">HEAD~ vs HEAD^、.. vs ...</a>
+    <a href="#cheatsheet">Cheat Sheet 速查表</a>
+  </nav>
+</aside>
+
+<main class="main">
+  <div class="topline">
+    <div></div>
+    <button id="themeBtn" title="切換深淺色">🌙 深色模式</button>
+  </div>
+  <h1>Git 完全教學</h1>
+  <p class="subtitle">常用指令、旗標（flag）變化、Before / After 圖解一次過睇晒。由 <code>git init</code> 到 <code>git rebase -i</code>，照住做就得。</p>
+  <div class="note"><span class="tag">閱讀方式</span>
+    每個指令都會有：用途簡介 → 語法 → <b>常用 flag 對照表</b> → 範例 → 圖解（如適用）。
+    灰色圓點係普通 commit，藍色係 <b>main</b>、綠色係 <b>feature</b>、橙色係 <b>hotfix</b>，虛線圓圈代表「將會被移除/覆蓋」嘅狀態。
+  </div>
+
+<!-- ==================== CONCEPTS ==================== -->
+<section class="sec" id="concepts">
+<h2 class="sec-title">基本概念（必讀）<a class="anchor" href="#concepts">#</a></h2>
+<p class="sec-lead">學 Git 指令之前，一定要搞清楚 Git 嘅「三個區域」同「HEAD」。之後所有指令，其實都係喺呢幾個區域之間搬嘢。</p>
+
+<h3>1. 三個區域（加埋遠端就四個）</h3>
+<figure class="diagram">
+<svg viewBox="0 0 760 240" width="760" role="img" aria-label="Git 四個區域">
+  <defs></defs>
+  <!-- boxes -->
+  <rect x="10" y="70" width="160" height="90" rx="12" fill="none" stroke="#8b98a9" stroke-width="2"/>
+  <rect x="200" y="70" width="160" height="90" rx="12" fill="none" stroke="#8b98a9" stroke-width="2"/>
+  <rect x="390" y="70" width="160" height="90" rx="12" fill="none" stroke="#2563eb" stroke-width="2"/>
+  <rect x="580" y="70" width="170" height="90" rx="12" fill="none" stroke="#7c3aed" stroke-width="2"/>
+  <text x="90" y="60" text-anchor="middle" font-size="14" font-weight="700" fill="var(--ink)">工作目錄</text>
+  <text x="90" y="178" text-anchor="middle" font-size="11.5" fill="var(--muted)">Working Directory</text>
+  <text x="280" y="60" text-anchor="middle" font-size="14" font-weight="700" fill="var(--ink)">暫存區</text>
+  <text x="280" y="178" text-anchor="middle" font-size="11.5" fill="var(--muted)">Staging / Index</text>
+  <text x="470" y="60" text-anchor="middle" font-size="14" font-weight="700" fill="var(--ink)">本地倉庫</text>
+  <text x="470" y="178" text-anchor="middle" font-size="11.5" fill="var(--muted)">Repository (.git)</text>
+  <text x="665" y="60" text-anchor="middle" font-size="14" font-weight="700" fill="var(--ink)">遠端倉庫</text>
+  <text x="665" y="178" text-anchor="middle" font-size="11.5" fill="var(--muted)">Remote (origin)</text>
+  <!-- inner content -->
+  <text x="90" y="112" text-anchor="middle" font-size="12" fill="var(--muted)">你實際編輯</text>
+  <text x="90" y="130" text-anchor="middle" font-size="12" fill="var(--muted)">嘅檔案</text>
+  <text x="280" y="112" text-anchor="middle" font-size="12" fill="var(--muted)">準備好要 commit</text>
+  <text x="280" y="130" text-anchor="middle" font-size="12" fill="var(--muted)">嘅快照</text>
+  <text x="470" y="112" text-anchor="middle" font-size="12" fill="#2563eb">commit 歷史</text>
+  <text x="470" y="130" text-anchor="middle" font-size="12" fill="#2563eb">A → B → C</text>
+  <text x="665" y="112" text-anchor="middle" font-size="12" fill="#7c3aed">GitHub /</text>
+  <text x="665" y="130" text-anchor="middle" font-size="12" fill="#7c3aed">GitLab 伺服器</text>
+  <!-- arrows top -->
+  <line x1="172" y1="95" x2="196" y2="95" stroke="#16a34a" stroke-width="2.5" marker-end="url(#arGr)"/>
+  <text x="185" y="86" text-anchor="middle" font-size="12" font-weight="700" fill="#16a34a">add</text>
+  <line x1="362" y1="95" x2="386" y2="95" stroke="#2563eb" stroke-width="2.5" marker-end="url(#arB)"/>
+  <text x="375" y="86" text-anchor="middle" font-size="12" font-weight="700" fill="#2563eb">commit</text>
+  <line x1="552" y1="95" x2="576" y2="95" stroke="#7c3aed" stroke-width="2.5" marker-end="url(#arP)"/>
+  <text x="565" y="86" text-anchor="middle" font-size="12" font-weight="700" fill="#7c3aed">push</text>
+  <!-- arrows bottom -->
+  <line x1="196" y1="140" x2="172" y2="140" stroke="#ea580c" stroke-width="2.5" marker-end="url(#arO)"/>
+  <text x="185" y="132" text-anchor="middle" font-size="12" font-weight="700" fill="#ea580c">restore</text>
+  <line x1="386" y1="140" x2="362" y2="140" stroke="#ea580c" stroke-width="2.5" marker-end="url(#arO)"/>
+  <text x="375" y="132" text-anchor="middle" font-size="11" font-weight="700" fill="#ea580c">restore --staged</text>
+  <line x1="576" y1="140" x2="552" y2="140" stroke="#7c3aed" stroke-width="2.5" marker-end="url(#arP)"/>
+  <text x="565" y="132" text-anchor="middle" font-size="11" font-weight="700" fill="#7c3aed">fetch / pull</text>
+  <!-- bottom note -->
+  <text x="380" y="222" text-anchor="middle" font-size="12" fill="var(--muted)">git checkout / switch：由倉庫拎返某個版本出嚟工作目錄</text>
+  <line x1="470" y1="200" x2="90" y2="200" stroke="#8b98a9" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#arG)"/>
+</svg>
+<figcaption>檔案嘅旅程：工作目錄 →（<code>git add</code>）→ 暫存區 →（<code>git commit</code>）→ 本地倉庫 →（<code>git push</code>）→ 遠端</figcaption>
+</figure>
+
+<h3>2. 檔案嘅四種狀態</h3>
+<figure class="diagram">
+<svg viewBox="0 0 720 200" width="720" role="img" aria-label="檔案狀態循環">
+  <rect x="10" y="30" width="130" height="52" rx="10" fill="none" stroke="#dc2626" stroke-width="2"/>
+  <text x="75" y="52" text-anchor="middle" font-size="13" font-weight="700" fill="#dc2626">Untracked</text>
+  <text x="75" y="70" text-anchor="middle" font-size="11" fill="var(--muted)">未追蹤（新檔案）</text>
+  <rect x="200" y="30" width="130" height="52" rx="10" fill="none" stroke="#16a34a" stroke-width="2"/>
+  <text x="265" y="52" text-anchor="middle" font-size="13" font-weight="700" fill="#16a34a">Staged</text>
+  <text x="265" y="70" text-anchor="middle" font-size="11" fill="var(--muted)">已暫存</text>
+  <rect x="390" y="30" width="140" height="52" rx="10" fill="none" stroke="#2563eb" stroke-width="2"/>
+  <text x="460" y="52" text-anchor="middle" font-size="13" font-weight="700" fill="#2563eb">Committed</text>
+  <text x="460" y="70" text-anchor="middle" font-size="11" fill="var(--muted)">已提交（冇改動）</text>
+  <rect x="590" y="30" width="120" height="52" rx="10" fill="none" stroke="#ea580c" stroke-width="2"/>
+  <text x="650" y="52" text-anchor="middle" font-size="13" font-weight="700" fill="#ea580c">Modified</text>
+  <text x="650" y="70" text-anchor="middle" font-size="11" fill="var(--muted)">已修改未暫存</text>
+  <line x1="142" y1="56" x2="196" y2="56" stroke="#16a34a" stroke-width="2.5" marker-end="url(#arGr)"/>
+  <text x="170" y="46" text-anchor="middle" font-size="12" fill="#16a34a">add</text>
+  <line x1="332" y1="56" x2="386" y2="56" stroke="#2563eb" stroke-width="2.5" marker-end="url(#arB)"/>
+  <text x="360" y="46" text-anchor="middle" font-size="12" fill="#2563eb">commit</text>
+  <line x1="532" y1="56" x2="586" y2="56" stroke="#ea580c" stroke-width="2.5" marker-end="url(#arO)"/>
+  <text x="560" y="46" text-anchor="middle" font-size="12" fill="#ea580c">編輯檔案</text>
+  <path d="M650 84 C 650 150, 265 150, 265 86" fill="none" stroke="#16a34a" stroke-width="2.5" marker-end="url(#arGr)"/>
+  <text x="460" y="146" text-anchor="middle" font-size="12" fill="#16a34a">git add（重新暫存）</text>
+  <path d="M460 84 C 460 190, 75 190, 75 86" fill="none" stroke="#dc2626" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arR)"/>
+  <text x="265" y="188" text-anchor="middle" font-size="12" fill="#dc2626">git rm（移除追蹤）</text>
+</svg>
+<figcaption>每個檔案任何時候都係其中一種狀態；<code>git status</code> 就係用嚟睇佢哋而家企喺邊</figcaption>
+</figure>
+
+<h3>3. HEAD 係咩？</h3>
+<p><b>HEAD 係一個指標</b>，指向「你而家企緊嘅位置」— 通常指向某個 branch，而 branch 再指向某個 commit。</p>
+<figure class="diagram">
+<svg viewBox="0 0 560 130" width="560" role="img" aria-label="HEAD 指標">
+  <line x1="60" y1="70" x2="400" y2="70" stroke="#2563eb" stroke-width="3"/>
+  <circle cx="60" cy="70" r="14" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="60" y="75" text-anchor="middle" font-size="12" fill="var(--ink)">A</text>
+  <circle cx="180" cy="70" r="14" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="180" y="75" text-anchor="middle" font-size="12" fill="var(--ink)">B</text>
+  <circle cx="300" cy="70" r="14" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="300" y="75" text-anchor="middle" font-size="12" fill="var(--ink)">C</text>
+  <circle cx="420" cy="70" r="14" fill="#2563eb" stroke="#2563eb" stroke-width="2.5"/><text x="420" y="75" text-anchor="middle" font-size="12" fill="#fff">D</text>
+  <rect x="385" y="24" width="70" height="24" rx="12" fill="#2563eb"/>
+  <text x="420" y="40" text-anchor="middle" font-size="12.5" fill="#fff" font-weight="700">main</text>
+  <line x1="420" y1="48" x2="420" y2="54" stroke="#2563eb" stroke-width="2"/>
+  <rect x="470" y="24" width="70" height="24" rx="12" fill="#f05133"/>
+  <text x="505" y="40" text-anchor="middle" font-size="12.5" fill="#fff" font-weight="700">HEAD</text>
+  <path d="M470 36 C 450 36, 445 30, 458 30" fill="none" stroke="#f05133" stroke-width="2" marker-end="url(#arR)"/>
+  <text x="505" y="80" text-anchor="middle" font-size="11.5" fill="var(--muted)">HEAD → main → D</text>
+</svg>
+<figcaption>HEAD 指向 main，main 指向 commit D。新 commit 出現時，main 會向前郁，HEAD 跟住 main 一齊郁</figcaption>
+</figure>
+<div class="legend">
+  <span><span class="dot" style="border-color:#2563eb"></span> 普通 commit</span>
+  <span><span class="dot" style="border-color:#2563eb;background:#2563eb"></span> 分支最新 commit（分支指標位置）</span>
+  <span><span class="dot" style="border-color:#8b98a9;border-style:dashed"></span> 將被移除 / 覆蓋</span>
+</div>
+</section>
+
+<!-- ==================== HELP ==================== -->
+<section class="sec" id="help">
+<h2 class="sec-title">取得幫助：<code>-h</code> / <code>--help</code><a class="anchor" href="#help">#</a></h2>
+<p class="sec-lead">唔記得某個指令點用？Git 內建咗兩層 help，<b>每一個子指令都支援</b>。</p>
+<div class="cmd">
+<h3><code>-h</code> vs <code>--help</code> 分別</h3>
+<table class="flags">
+<tr><th>寫法</th><th>輸出</th><th>幾時用</th></tr>
+<tr><td><code>git &lt;指令&gt; -h</code></td><td>喺 terminal 直接列出簡短選項清單</td><td>想快速睇有咩 flag 可用</td></tr>
+<tr><td><code>git &lt;指令&gt; --help</code></td><td>打開完整 man page 說明文件（瀏覽器或 pager）</td><td>想睇詳細解釋同範例</td></tr>
+<tr><td><code>git help &lt;指令&gt;</code></td><td>同 <code>--help</code> 一樣</td><td>另一種寫法，效果相同</td></tr>
+</table>
+<div class="cb"><div class="cb-head">bash<button class="copy">複製</button></div><pre><code># 快速睇 commit 有咩選項（喺 terminal 即刻顯示）
+git commit -h
+
+# 打開 commit 嘅完整手冊
+git commit --help
+git help commit
+
+# 列出所有 git 指令
+git help -a
+
+# 列出 git 概念指南（例如 git help everyday、giteveryday(7)）
+git help -g
+
+# 睇 git 版本
+git version</code></pre></div>
+<div class="tip"><span class="tag">貼士</span>想知 <code>-v</code>、<code>-f</code>、<code>-n</code> 呢啲短 flag 喺某指令度代表咩，最快係打 <code>git &lt;指令&gt; -h</code>。留意：同一個字母喺唔同指令可以係完全唔同意思（例如 <code>git tag -v</code> 係驗證簽名，<code>git branch -v</code> 係顯示詳情，<code>git remote -v</code> 係顯示 URL）。</div>
+</div>
+</section>
+
+<!-- ==================== CONFIG ==================== -->
+<section class="sec" id="config">
+<h2 class="sec-title"><code>git config</code> — 設定身份同偏好<a class="anchor" href="#config">#</a></h2>
+<p class="sec-lead">第一次用 Git 必先設定用戶名同 email，否則 commit 唔到（或 commit 咗啲奇怪身份）。</p>
+<div class="cmd">
+<h3>語法</h3>
+<div class="cb"><div class="cb-head">bash<button class="copy">複製</button></div><pre><code># 第一次必做（--global 對呢部電腦你所有 repo 生效）
+git config --global user.name "Chan Tai Man"
+git config --global user.email "taiman@example.com"
+
+# 預設分支名用 main
+git config --global init.defaultBranch main
+
+# 預設編輯器（寫 commit message 用）
+git config --global core.editor "code --wait"
+
+# 開彩色輸出
+git config --global color.ui auto</code></pre></div>
+<h3>三個層級（local 優先 &gt; global &gt; system）</h3>
+<table class="flags">
+<tr><th>Flag</th><th>設定檔位置</th><th>適用範圍</th></tr>
+<tr><td><code>--system</code></td><td>系統 git 安裝目錄</td><td>整部機所有用戶所有 repo</td></tr>
+<tr><td><code>--global</code></td><td><code>~/.gitconfig</code></td><td>你呢個用戶嘅所有 repo（最常用）</td></tr>
+<tr><td><code>--local</code>（預設）</td><td><code>.git/config</code>（單一 repo 內）</td><td>淨係呢個 repo，會覆蓋 global</td></tr>
+</table>
+<h3>常用 flag</h3>
+<table class="flags">
+<tr><th>Flag</th><th>作用</th><th>例子</th></tr>
+<tr><td><code>--list</code> / <code>-l</code></td><td>列出所有設定</td><td><code>git config --list</code></td></tr>
+<tr><td><code>--list --show-origin</code></td><td>列出設定＋嚟自邊個檔案</td><td>搵緊某設定喺邊度嚟時超好用</td></tr>
+<tr><td><code>--get</code></td><td>讀取單一值</td><td><code>git config --get user.name</code></td></tr>
+<tr><td><code>--unset</code></td><td>刪除某項設定</td><td><code>git config --global --unset core.editor</code></td></tr>
+<tr><td><code>--edit</code> / <code>-e</code></td><td>用編輯器打開設定檔直接改</td><td><code>git config --global -e</code></td></tr>
+<tr><td><code>--add</code></td><td>新增一項（可重複 key）</td><td><code>git config --add alias.lg "log --oneline"</code></td></tr>
+</table>
+<h3>Alias（指令縮寫）— 高手必備</h3>
+<div class="cb"><div class="cb-head">bash<button class="copy">複製</button></div><pre><code>git config --global alias.st status
+git config --global alias.co checkout
+git config --global alias.br branch
+git config --global alias.cm "commit -m"
+git config --global alias.lg "log --oneline --graph --decorate --all"
+git config --global alias.undo "reset --soft HEAD~1"
+
+# 之後就可以直接咁用：
+git st
+git lg</code></pre></div>
+<div class="note"><span class="tag">注意</span>公司 repo 想唔同身份？入到個 repo 度用 <code>git config user.email "work@company.com"</code>（唔加 --global，即 --local），淨係影響嗰個 repo。</div>
+</div>
+</section>
+
+<!-- ==================== INIT / CLONE ==================== -->
+<section class="sec" id="init-clone">
+<h2 class="sec-title"><code>git init</code> / <code>git clone</code> — 建立或複製倉庫<a class="anchor" href="#init-clone">#</a></h2>
+<p class="sec-lead">開始一個 repo 得兩條路：本地全新開一個（init），或者由遠端複製一個返嚟（clone）。</p>
+
+<div class="cmd">
+<h3><span class="num">1</span><code>git init</code> — 喺而家目錄初始化 repo</h3>
+<div class="cb"><div class="cb-head">bash<button class="copy">複製</button></div><pre><code>mkdir my-project && cd my-project
+git init                    # 喺而家目錄建立 .git/
+git init my-project         # 建一個新資料夾兼喺入面 init
+git init -b main            # 指定初始分支名（Git ≥ 2.28）</code></pre></div>
+<table class="flags">
+<tr><th>Flag</th><th>作用</th></tr>
+<tr><td><code>-b &lt;名&gt;</code> / <code>--initial-branch=&lt;名&gt;</code></td><td>指定第一個分支名（例：<code>main</code>）</td></tr>
+<tr><td><code>--bare</code></td><td>建立「裸倉庫」（冇工作目錄，淨係攞嚟做中央伺服器 repo，通常叫 <code>xxx.git</code>）</td></tr>
+<tr><td><code>--quiet</code> / <code>-q</code></td><td>靜音模式，唔輸出訊息</td></tr>
+</table>
+<div class="note"><span class="tag">注意</span>喺已經係 repo 嘅目錄再 <code>git init</code> 係安全嘅，唔會刪走任何嘢，只會補返缺失嘅結構。</div>
+</div>
+
+<div class="cmd">
+<h3><span class="num">2</span><code>git clone</code> — 由遠端複製成個 repo 返本地</h3>
+<div class="cb"><div class="cb-head">bash<button class="copy">複製</button></div><pre><code>git clone https://github.com/user/repo.git            # 複製到 ./repo
+git clone https://github.com/user/repo.git my-folder  # 複製到自訂資料夾名
+git clone git@github.com:user/repo.git                # SSH 版（設好 SSH key 後用）</code></pre></div>
+<table class="flags">
+<tr><th>Flag</th><th>作用</th><th>例子</th></tr>
+<tr><td><code>--depth &lt;n&gt;</code></td><td>淺複製：只拎最近 n 個 commit，快好多、慳位（代價：冇完整歷史）</td><td><code>git clone --depth 1 &lt;url&gt;</code></td></tr>
+<tr><td><code>-b &lt;分支&gt;</code> / <code>--branch</code></td><td>clone 完直接 checkout 指定分支或 tag</td><td><code>git clone -b dev &lt;url&gt;</code></td></tr>
+<tr><td><code>--single-branch</code></td><td>只複製一個分支（通常連 <code>--depth</code> 一齊用）</td><td><code>git clone --depth 1 --single-branch -b main &lt;url&gt;</code></td></tr>
+<tr><td><code>--recurse-submodules</code></td><td>連 submodule 一齊初始化同更新</td><td>repo 有 submodule 時必加</td></tr>
+<tr><td><code>-o &lt;名&gt;</code> / <code>--origin</code></td><td>遠端名唔用預設嘅 <code>origin</code>，改用自訂名</td><td><code>git clone -o upstream &lt;url&gt;</code></td></tr>
+<tr><td><code>--mirror</code></td><td>鏡像複製（連所有 ref 原封不動，做備份/搬伺服器用）</td><td><code>git clone --mirror &lt;url&gt;</code></td></tr>
+<tr><td><code>-v</code> / <code>--verbose</code></td><td>顯示更詳細過程</td><td></td></tr>
+<tr><td><code>-q</code> / <code>--quiet</code></td><td>靜音</td><td></td></tr>
+</table>
+<figure class="diagram">
+<svg viewBox="0 0 700 190" width="700" role="img" aria-label="clone 圖解">
+  <rect x="30" y="40" width="200" height="110" rx="12" fill="none" stroke="#7c3aed" stroke-width="2"/>
+  <text x="130" y="32" text-anchor="middle" font-size="13.5" font-weight="700" fill="#7c3aed">遠端倉庫 (GitHub)</text>
+  <circle cx="75" cy="90" r="12" fill="#fff" stroke="#7c3aed" stroke-width="2.5"/><text x="75" y="94" text-anchor="middle" font-size="11" fill="var(--ink)">A</text>
+  <circle cx="125" cy="90" r="12" fill="#fff" stroke="#7c3aed" stroke-width="2.5"/><text x="125" y="94" text-anchor="middle" font-size="11" fill="var(--ink)">B</text>
+  <circle cx="175" cy="90" r="12" fill="#7c3aed" stroke="#7c3aed" stroke-width="2.5"/><text x="175" y="94" text-anchor="middle" font-size="11" fill="#fff">C</text>
+  <line x1="87" y1="90" x2="113" y2="90" stroke="#7c3aed" stroke-width="2.5"/>
+  <line x1="137" y1="90" x2="163" y2="90" stroke="#7c3aed" stroke-width="2.5"/>
+  <text x="130" y="135" text-anchor="middle" font-size="12" fill="var(--muted)">main → C</text>
+  <line x1="238" y1="95" x2="332" y2="95" stroke="#16a34a" stroke-width="3" marker-end="url(#arGr)"/>
+  <text x="285" y="84" text-anchor="middle" font-size="13.5" font-weight="700" fill="#16a34a">git clone</text>
+  <rect x="340" y="40" width="330" height="110" rx="12" fill="none" stroke="#2563eb" stroke-width="2"/>
+  <text x="505" y="32" text-anchor="middle" font-size="13.5" font-weight="700" fill="#2563eb">本地（一次過有三樣嘢）</text>
+  <circle cx="395" cy="90" r="12" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="395" y="94" text-anchor="middle" font-size="11" fill="var(--ink)">A</text>
+  <circle cx="445" cy="90" r="12" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="445" y="94" text-anchor="middle" font-size="11" fill="var(--ink)">B</text>
+  <circle cx="495" cy="90" r="12" fill="#2563eb" stroke="#2563eb" stroke-width="2.5"/><text x="495" y="94" text-anchor="middle" font-size="11" fill="#fff">C</text>
+  <line x1="407" y1="90" x2="433" y2="90" stroke="#2563eb" stroke-width="2.5"/>
+  <line x1="457" y1="90" x2="483" y2="90" stroke="#2563eb" stroke-width="2.5"/>
+  <text x="395" y="125" text-anchor="middle" font-size="11.5" fill="var(--muted)">① 完整歷史 (.git)</text>
+  <text x="505" y="125" text-anchor="middle" font-size="11.5" fill="var(--muted)">② 工作目錄（已 checkout main）</text>
+  <text x="610" y="125" text-anchor="middle" font-size="11.5" fill="var(--muted)">③ 遠端追蹤 origin/main</text>
+  <text x="600" y="80" text-anchor="middle" font-size="12" fill="#7c3aed">origin/main ↘</text>
+</svg>
+<figcaption>clone 會一次過攞晒：完整 commit 歷史、checkout 好嘅工作目錄、同埋遠端追蹤分支（<code>origin/main</code>），仲會自動加好 <code>origin</code> 呢個 remote</figcaption>
+</figure>
+</div>
+</section>
+
+<!-- ==================== SNAPSHOT ==================== -->
+<section class="sec" id="snapshot">
+<h2 class="sec-title">日常快照：status / add / commit / diff / rm / mv<a class="anchor" href="#snapshot">#</a></h2>
+<p class="sec-lead">呢六個指令係你每日會用幾十次嘅核心循環：改嘢 → 睇狀態 → 暫存 → 提交。</p>
+
+<div class="cmd">
+<h3><span class="num">1</span><code>git status</code> — 睇而家嘅狀態</h3>
+<div class="cb"><div class="cb-head">bash<button class="copy">複製</button></div><pre><code>git status          # 完整版（新手友善，會提示你下一步可以做咩）
+git status -s       # 精簡版，一個檔案一行
+git status -sb      # 精簡版＋第一行顯示分支同領先/落後資訊</code></pre></div>
+<table class="flags">
+<tr><th>Flag</th><th>作用</th></tr>
+<tr><td><code>-s</code> / <code>--short</code></td><td>精簡輸出，用兩個字母（XY）表示狀態</td></tr>
+<tr><td><code>-b</code> / <code>--branch</code></td><td>連分支資訊一齊顯示（配 <code>-s</code> 用：<code>-sb</code>）</td></tr>
+<tr><td><code>-u&lt;模式&gt;</code></td><td>未追蹤檔案顯示方式：<code>-unormal</code>（預設）、<code>-uall</code>（逐個列出）、<code>-uno</code>（唔顯示）</td></tr>
+<tr><td><code>--ignored</code></td><td>連被 .gitignore 忽略嘅檔案都列出嚟</td></tr>
+<tr><td><code>--porcelain</code></td><td>機器可讀格式（寫 script 用）</td></tr>
+<tr><td><code>-v</code> / <code>--verbose</code></td><td>連已暫存嘅 diff 內容都顯示埋</td></tr>
+</table>
+<h4><code>-s</code> 精簡版嘅 XY 代碼點睇</h4>
+<div class="cb"><div class="cb-head">bash<button class="copy">複製</button></div><pre><code>$ git status -s
+ M index.html     # 第2位 M：工作目錄改咗，未 add
+M  style.css      # 第1位 M：已 add，未 commit
+MM app.js         # 已 add 之後又再改過
+A  new-file.txt   # A：新加入暫存區
+D  old.txt        # 已刪除（已暫存）
+?? notes.md       # ??：untracked 新檔案</code></pre></div>
+<p class="mini">第一個字母＝暫存區狀態（同 HEAD 比），第二個字母＝工作目錄狀態（同暫存區比）。</p>
+</div>
+
+<div class="cmd">
+<h3><span class="num">2</span><code>git add</code> — 將改動放入暫存區</h3>
+<div class="ba">
+<figure class="diagram"><span class="ba-cap">BEFORE</span>
+<svg viewBox="0 0 330 110" width="330" role="img" aria-label="add 之前">
+  <rect x="10" y="20" width="145" height="70" rx="10" fill="none" stroke="#8b98a9" stroke-width="2"/>
+  <text x="82" y="14" text-anchor="middle" font-size="12" font-weight="700" fill="var(--muted)">工作目錄</text>
+  <text x="82" y="50" text-anchor="middle" font-size="12" fill="#dc2626">a.js ✎ 改咗</text>
+  <text x="82" y="68" text-anchor="middle" font-size="12" fill="#dc2626">b.js ✎ 改咗</text>
+  <rect x="170" y="20" width="145" height="70" rx="10" fill="none" stroke="#8b98a9" stroke-width="2"/>
+  <text x="242" y="14" text-anchor="middle" font-size="12" font-weight="700" fill="var(--muted)">暫存區</text>
+  <text x="242" y="58" text-anchor="middle" font-size="12" fill="var(--muted)">（空）</text>
+</svg></figure>
+<div class="ba-arrow">➜</div>
+<figure class="diagram"><span class="ba-cap">AFTER：git add a.js</span>
+<svg viewBox="0 0 330 110" width="330" role="img" aria-label="add 之後">
+  <rect x="10" y="20" width="145" height="70" rx="10" fill="none" stroke="#8b98a9" stroke-width="2"/>
+  <text x="82" y="14" text-anchor="middle" font-size="12" font-weight="700" fill="var(--muted)">工作目錄</text>
+  <text x="82" y="50" text-anchor="middle" font-size="12" fill="var(--muted)">a.js</text>
+  <text x="82" y="68" text-anchor="middle" font-size="12" fill="#dc2626">b.js ✎ 改咗</text>
+  <rect x="170" y="20" width="145" height="70" rx="10" fill="none" stroke="#16a34a" stroke-width="2"/>
+  <text x="242" y="14" text-anchor="middle" font-size="12" font-weight="700" fill="var(--muted)">暫存區</text>
+  <text x="242" y="58" text-anchor="middle" font-size="12" fill="#16a34a">a.js ✔ 已暫存</text>
+</svg></figure>
+</div>
+<div class="cb"><div class="cb-head">bash<button class="copy">複製</button></div><pre><code>git add a.js              # 加一個檔案
+git add a.js b.js c.js    # 加多個檔案
+git add .                 # 加目前目錄及子目錄所有改動
+git add src/              # 加成個資料夾
+git add '*.js'            # 用萬用字元（要加引號）</code></pre></div>
+<table class="flags">
+<tr><th>Flag</th><th>作用</th></tr>
+<tr><td><code>-A</code> / <code>--all</code></td><td>加晒<b>全部</b>改動（包括刪除檔案），不限目前目錄</td></tr>
+<tr><td><code>-u</code> / <code>--update</code></td><td>只 add <b>已追蹤</b>檔案嘅修改同刪除，唔理 untracked 新檔</td></tr>
+<tr><td><code>-p</code> / <code>--patch</code></td><td>互動模式：逐塊（hunk）揀 add 唔 add，精細控制</td></tr>
+<tr><td><code>-n</code> / <code>--dry-run</code></td><td>假裝執行：顯示會加咩，但唔真係加</td></tr>
+<tr><td><code>-f</code> / <code>--force</code></td><td>強制 add 被 .gitignore 忽略嘅檔案</td></tr>
+<tr><td><code>-v</code> / <code>--verbose</code></td><td>顯示每個被加入嘅檔案</td></tr>
+</table>
+<h4><code>git add -p</code> 互動模式按鍵</h4>
+<table class="flags">
+<tr><th>按鍵</th><th>意思</th><th>按鍵</th><th>意思</th></tr>
+<tr><td><kbd>y</kbd></td><td>要呢一塊</td><td><kbd>n</kbd></td><td>唔要呢一塊</td></tr>
+<tr><td><kbd>s</kbd></td><td>再拆細呢一塊（split）</td><td><kbd>e</kbd></td><td>手動編輯呢一塊</td></tr>
+<tr><td><kbd>a</kbd></td><td>呢個檔案剩餘全部要</td><td><kbd>d</kbd></td><td>呢個檔案剩餘全部唔要</td></tr>
+<tr><td><kbd>q</kbd></td><td>退出</td><td><kbd>?</kbd></td><td>幫助</td></tr>
+</table>
+</div>
+
+<div class="cmd">
+<h3><span class="num">3</span><code>git commit</code> — 將暫存區快照寫入歷史</h3>
+<div class="cb"><div class="cb-head">bash<button class="copy">複製</button></div><pre><code>git commit                          # 打開編輯器寫 message
+git commit -m "修正登入按鈕樣式"      # 直接俾 message（最常用）
+git commit -m "標題" -m "詳細內容"   # 多個 -m = 分段（標題＋內文）
+git commit -am "訊息"               # add 已追蹤檔案＋commit 一步到位</code></pre></div>
+<table class="flags">
+<tr><th>Flag</th><th>作用</th></tr>
+<tr><td><code>-m "&lt;訊息&gt;"</code></td><td>直接提供 commit message，唔開編輯器</td></tr>
+<tr><td><code>-a</code> / <code>--all</code></td><td>自動 add 晒<b>已追蹤</b>檔案嘅修改同刪除先 commit（untracked 新檔唔包）</td></tr>
+<tr><td><code>--amend</code></td><td>修改<b>上一個</b> commit（加漏嘢、改 message 用；會改寫歷史）</td></tr>
+<tr><td><code>--no-edit</code></td><td>配合 <code>--amend</code> 用：保留原有 message 唔改</td></tr>
+<tr><td><code>--author="名 &lt;email&gt;"</code></td><td>指定作者係其他人</td></tr>
+<tr><td><code>--date="&lt;日期&gt;"</code></td><td>自訂 commit 日期（如 <code>"2024-01-15 10:00"</code>）</td></tr>
+<tr><td><code>--allow-empty</code></td><td>冇任何改動都照 commit（做標記、觸發 CI 用）</td></tr>
+<tr><td><code>-n</code> / <code>--no-verify</code></td><td>跳過 pre-commit hook（例如 lint 擋住想強行 commit）</td></tr>
+<tr><td><code>-s</code> / <code>--signoff</code></td><td>訊息尾加 Signed-off-by 行</td></tr>
+<tr><td><code>-v</code> / <code>--verbose</code></td><td>喺編輯器底部顯示完整 diff，方便寫 message</td></tr>
+<tr><td><code>-q</code> / <code>--quiet</code></td><td>靜音</td></tr>
+</table>
+<h4><code>--amend</code> 圖解：改寫最後一個 commit</h4>
+<div class="ba">
+<figure class="diagram"><span class="ba-cap">BEFORE</span>
+<svg viewBox="0 0 340 100" width="340" role="img" aria-label="amend 之前">
+  <line x1="50" y1="60" x2="260" y2="60" stroke="#2563eb" stroke-width="3"/>
+  <circle cx="50" cy="60" r="13" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="50" y="65" text-anchor="middle" font-size="11" fill="var(--ink)">A</text>
+  <circle cx="155" cy="60" r="13" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="155" y="65" text-anchor="middle" font-size="11" fill="var(--ink)">B</text>
+  <circle cx="260" cy="60" r="13" fill="#2563eb" stroke="#2563eb" stroke-width="2.5"/><text x="260" y="65" text-anchor="middle" font-size="11" fill="#fff">C</text>
+  <rect x="222" y="16" width="76" height="22" rx="11" fill="#2563eb"/><text x="260" y="31" text-anchor="middle" font-size="11" fill="#fff" font-weight="700">HEAD→main</text>
+  <text x="260" y="92" text-anchor="middle" font-size="11" fill="#dc2626">message 打錯字＋漏咗檔案</text>
+</svg></figure>
+<div class="ba-arrow">➜</div>
+<figure class="diagram"><span class="ba-cap">AFTER：git commit --amend</span>
+<svg viewBox="0 0 340 100" width="340" role="img" aria-label="amend 之後">
+  <line x1="50" y1="60" x2="260" y2="60" stroke="#2563eb" stroke-width="3"/>
+  <circle cx="50" cy="60" r="13" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="50" y="65" text-anchor="middle" font-size="11" fill="var(--ink)">A</text>
+  <circle cx="155" cy="60" r="13" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="155" y="65" text-anchor="middle" font-size="11" fill="var(--ink)">B</text>
+  <circle cx="260" cy="60" r="13" fill="#2563eb" stroke="#2563eb" stroke-width="2.5"/><text x="260" y="65" text-anchor="middle" font-size="11" fill="#fff">C'</text>
+  <circle cx="260" cy="26" r="11" fill="#fff" stroke="#8b98a9" stroke-width="2" stroke-dasharray="4 3"/><text x="260" y="30" text-anchor="middle" font-size="10" fill="var(--muted)">C</text>
+  <rect x="222" y="76" width="76" height="22" rx="11" fill="#2563eb"/><text x="260" y="91" text-anchor="middle" font-size="11" fill="#fff" font-weight="700">HEAD→main</text>
+</svg></figure>
+</div>
+<p class="mini">舊 commit C 被新 commit C' 取代（hash 會變）。虛線 C 變成冇分支指向嘅「孤兒」。</p>
+<div class="danger"><span class="tag">危險</span><code>--amend</code> 會改寫歷史：<b>已經 push 咗嘅 commit 千祈唔好 amend</b>，否則隊友 pull 時會撞車。只可以 amend 未公開嘅 commit。</div>
+<h4>好嘅 commit message 格式</h4>
+<div class="cb"><div class="cb-head">text<button class="copy">複製</button></div><pre><code>feat: 新增會員註冊功能        ← 第一行：50字內講「做咗咩」（祈使句）
+                              ← 空一行
+- 加入註冊表單同驗證           ← 內文：講「點解」同「點做」
+- 密碼用 bcrypt 加密
+
+Closes #123                   ← 關聯 issue</code></pre></div>
+</div>
+
+<div class="cmd">
+<h3><span class="num">4</span><code>git diff</code> — 睇改咗啲咩</h3>
+<p class="lead">最緊要記住：diff 比較邊兩樣嘢，完全取決於你點落參數。</p>
+<figure class="diagram">
+<svg viewBox="0 0 680 170" width="680" role="img" aria-label="diff 比較對象">
+  <rect x="20" y="50" width="150" height="70" rx="10" fill="none" stroke="#8b98a9" stroke-width="2"/>
+  <text x="95" y="44" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--muted)">工作目錄</text>
+  <rect x="265" y="50" width="150" height="70" rx="10" fill="none" stroke="#16a34a" stroke-width="2"/>
+  <text x="340" y="44" text-anchor="middle" font-size="12.5" font-weight="700" fill="#16a34a">暫存區</text>
+  <rect x="510" y="50" width="150" height="70" rx="10" fill="none" stroke="#2563eb" stroke-width="2"/>
+  <text x="585" y="44" text-anchor="middle" font-size="12.5" font-weight="700" fill="#2563eb">HEAD（最後 commit）</text>
+  <line x1="172" y1="85" x2="261" y2="85" stroke="#ea580c" stroke-width="2.5" marker-end="url(#arO)" marker-start="url(#arO)"/>
+  <text x="217" y="76" text-anchor="middle" font-size="12" font-weight="700" fill="#ea580c">git diff</text>
+  <line x1="417" y1="85" x2="506" y2="85" stroke="#16a34a" stroke-width="2.5" marker-end="url(#arGr)" marker-start="url(#arGr)"/>
+  <text x="461" y="76" text-anchor="middle" font-size="12" font-weight="700" fill="#16a34a">git diff --staged</text>
+  <line x1="95" y1="122" x2="585" y2="122" stroke="#2563eb" stroke-width="2.5" marker-end="url(#arB)" marker-start="url(#arB)"/>
+  <text x="340" y="145" text-anchor="middle" font-size="12" font-weight="700" fill="#2563eb">git diff HEAD（工作目錄 vs 最後 commit，睇晒全部未 commit 改動）</text>
+</svg>
+<figcaption>三條最常用嘅 diff 路線</figcaption>
+</figure>
+<div class="cb"><div class="cb-head">bash<button class="copy">複製</button></div><pre><code>git diff                      # 工作目錄 vs 暫存區（未 add 嘅改動）
+git diff --staged             # 暫存區 vs HEAD（已 add、將會 commit 嘅嘢）
+git diff HEAD                 # 工作目錄 vs HEAD（全部未 commit 改動）
+git diff a.js                 # 淨係睇一個檔案
+git diff HEAD~3 HEAD          # 兩個 commit 之間
+git diff main                 # 而家分支 vs main
+git diff main..feature        # 同上（兩點寫法）
+git diff main...feature       # 三點：feature 自分支出嚟之後改咗咩（推薦）</code></pre></div>
+<table class="flags">
+<tr><th>Flag</th><th>作用</th></tr>
+<tr><td><code>--staged</code> / <code>--cached</code></td><td>比較暫存區同 HEAD（兩個名一樣意思）</td></tr>
+<tr><td><code>--stat</code></td><td>淨係睇摘要：邊個檔案改咗幾多行</td></tr>
+<tr><td><code>--name-only</code></td><td>只列檔名</td></tr>
+<tr><td><code>--name-status</code></td><td>檔名＋狀態（M/A/D）</td></tr>
+<tr><td><code>-w</code> / <code>--ignore-all-space</code></td><td>忽略空白差異（改縮排嗰陣特別有用）</td></tr>
+<tr><td><code>--word-diff</code></td><td>以「字」為單位顯示差異（文件類檔案好用）</td></tr>
+<tr><td><code>-U&lt;n&gt;</code></td><td>差異上下多顯示 n 行 context（如 <code>-U10</code>）</td></tr>
+<tr><td><code>--color-words</code></td><td>逐字上色顯示差異</td></tr>
+</table>
+</div>
+
+<div class="cmd">
+<h3><span class="num">5</span><code>git rm</code> / <code>git mv</code> — 刪除同改名</h3>
+<div class="cb"><div class="cb-head">bash<button class="copy">複製</button></div><pre><code>git rm old.txt                # 刪除檔案＋暫存呢個刪除（一步搞掂）
+git rm --cached secret.env    # 停止追蹤，但保留硬碟上嘅檔案
+git rm -r --cached node_modules/   # 成個資料夾停止追蹤（誤 add 後補救）
+git mv old-name.js new-name.js     # 改名＋暫存（等於 mv + git rm + git add）</code></pre></div>
+<table class="flags">
+<tr><th>Flag</th><th>作用</th></tr>
+<tr><td><code>--cached</code></td><td>只喺 Git 度移除追蹤，硬碟檔案保留（配 .gitignore 補救最常用）</td></tr>
+<tr><td><code>-f</code> / <code>--force</code></td><td>強制刪除（檔案有未暫存改動時 Git 會阻止，-f 硬闖）</td></tr>
+<tr><td><code>-r</code></td><td>遞迴：成個資料夾一齊刪</td></tr>
+<tr><td><code>-n</code> / <code>--dry-run</code></td><td>預演：顯示會刪咩，唔真係刪</td></tr>
+<tr><td><code>--ignore-unmatch</code></td><td>檔案唔存在都唔報錯（script 用）</td></tr>
+<tr><td><code>-q</code></td><td>靜音</td></tr>
+</table>
+<div class="tip"><span class="tag">貼士</span>典型補救流程：誤 commit 咗 <code>.env</code> → 先寫入 <code>.gitignore</code> → <code>git rm --cached .env</code> → commit。檔案仲喺你部機度，但 Git 唔再追蹤。</div>
+<p class="mini"><code>git mv</code> 都支援 <code>-f</code>（覆蓋已存在檔案）、<code>-n</code>（dry run）、<code>-v</code>（verbose）、<code>-k</code>（出錯時跳過繼續）。</p>
+</div>
+</section>
+
+<!-- ==================== HISTORY ==================== -->
+<section class="sec" id="history">
+<h2 class="sec-title">檢視歷史：<code>git log</code> / <code>git show</code> / <code>git blame</code> / <code>git reflog</code><a class="anchor" href="#history">#</a></h2>
+<p class="sec-lead">Git 嘅歷史就係佢嘅靈魂。學識睇歷史，你先可以喺幾百個 commit 入面搵到你要嘅嘢。</p>
+
+<div class="cmd">
+<h3><span class="num">1</span><code>git log</code> — 睇 commit 歷史</h3>
+<div class="cb"><div class="cb-head">bash<button class="copy">複製</button></div><pre><code>git log                                   # 完整歷史（q 退出）
+git log --oneline                         # 一行一個 commit（極常用）
+git log --oneline -10                     # 淨係最近 10 個
+git log --graph --oneline --decorate --all  # 畫出分支圖（強烈建議做 alias）</code></pre></div>
+<h4>篩選類 flag</h4>
+<table class="flags">
+<tr><th>Flag</th><th>作用</th><th>例子</th></tr>
+<tr><td><code>-&lt;n&gt;</code> / <code>-n &lt;n&gt;</code> / <code>--max-count=&lt;n&gt;</code></td><td>只顯示最近 n 個</td><td><code>git log -5</code></td></tr>
+<tr><td><code>--since</code> / <code>--after</code></td><td>某時間之後</td><td><code>git log --since="2 weeks ago"</code></td></tr>
+<tr><td><code>--until</code> / <code>--before</code></td><td>某時間之前</td><td><code>git log --until="2024-06-01"</code></td></tr>
+<tr><td><code>--author="&lt;名&gt;"</code></td><td>篩作者（支援部分匹配）</td><td><code>git log --author="Tai Man"</code></td></tr>
+<tr><td><code>--grep="&lt;字&gt;"</code></td><td>篩 message 內容</td><td><code>git log --grep="fix"</code></td></tr>
+<tr><td><code>-S"&lt;字&gt;"</code>（pickaxe）</td><td>篩「程式碼入面出現/消失咗某字串」嘅 commit</td><td><code>git log -S"password" --oneline</code></td></tr>
+<tr><td><code>-G"&lt;regex&gt;"</code></td><td>同上但用正則</td><td><code>git log -G"api_key.*="</code></td></tr>
+<tr><td><code>-- &lt;路徑&gt;</code></td><td>只睇某檔案/資料夾嘅歷史</td><td><code>git log --oneline -- src/app.js</code></td></tr>
+<tr><td><code>--follow</code></td><td>追蹤改名過嘅檔案（要配 <code>-- &lt;檔案&gt;</code>）</td><td><code>git log --follow -p -- app.js</code></td></tr>
+<tr><td><code>--merges</code> / <code>--no-merges</code></td><td>只睇 / 唔睇 merge commit</td><td><code>git log --no-merges</code></td></tr>
+<tr><td><code>--first-parent</code></td><td>只行主線，唔入分支（main 乾淨好多）</td><td><code>git log --first-parent --oneline</code></td></tr>
+<tr><td><code>A..B</code></td><td>喺 B 有、但 A 冇嘅 commit</td><td><code>git log main..feature --oneline</code></td></tr>
+<tr><td><code>--all</code></td><td>所有分支嘅歷史</td><td></td></tr>
+<tr><td><code>--reverse</code></td><td>反轉順序（最舊先）</td><td></td></tr>
+</table>
+<h4>顯示格式類 flag</h4>
+<table class="flags">
+<tr><th>Flag</th><th>作用</th></tr>
+<tr><td><code>--oneline</code></td><td>= <code>--pretty=oneline --abbrev-commit</code>，一行一個</td></tr>
+<tr><td><code>--graph</code></td><td>左邊畫 ASCII 分支線</td></tr>
+<tr><td><code>--decorate</code></td><td>顯示分支/tag 名喺邊個 commit</td></tr>
+<tr><td><code>-p</code> / <code>--patch</code></td><td>每個 commit 連完整 diff</td></tr>
+<tr><td><code>--stat</code></td><td>每個 commit 顯示改動檔案統計</td></tr>
+<tr><td><code>--shortstat</code></td><td>只顯示總行數統計</td></tr>
+<tr><td><code>--name-only</code> / <code>--name-status</code></td><td>列出改動檔名</td></tr>
+<tr><td><code>--abbrev-commit</code></td><td>hash 縮短顯示</td></tr>
+<tr><td><code>--pretty=format:"..."</code></td><td>自訂格式（見下表）</td></tr>
+</table>
+<h4><code>--pretty=format:</code> 常用佔位符</h4>
+<table class="flags">
+<tr><th>符號</th><th>意思</th><th>符號</th><th>意思</th></tr>
+<tr><td><code>%h</code> / <code>%H</code></td><td>短 / 長 hash</td><td><code>%an</code> / <code>%ae</code></td><td>作者名 / email</td></tr>
+<tr><td><code>%s</code></td><td>commit 標題</td><td><code>%ad</code> / <code>%ar</code></td><td>日期 / 相對時間（如 "3 days ago"）</td></tr>
+<tr><td><code>%d</code></td><td>分支/tag 標記</td><td><code>%cn</code> / <code>%cr</code></td><td>提交者名 / 相對提交時間</td></tr>
+</table>
+<div class="cb"><div class="cb-head">bash<button class="copy">複製</button></div><pre><code>git log --pretty=format:"%h %ad | %s%d [%an]" --graph --date=short
+# 輸出例子：
+# * 3f2a1b9 2024-06-10 | 修正登入錯誤 (HEAD -> main) [Chan Tai Man]
+# * 9c8d7e6 2024-06-09 | 新增忘記密碼頁 [Lee Siu Ming]</code></pre></div>
+<figure class="diagram">
+<svg viewBox="0 0 620 210" width="620" role="img" aria-label="git log --graph 圖解">
+  <text x="20" y="24" font-size="13" fill="var(--muted)" font-family="monospace">git log --graph --oneline --all 實際輸出：</text>
+  <text x="20" y="52" font-size="13" fill="var(--ink)" font-family="monospace">* e5f6a7b (HEAD -> main) 合併登入功能</text>
+  <text x="20" y="76" font-size="13" fill="var(--ink)" font-family="monospace">|\</text>
+  <text x="20" y="100" font-size="13" fill="var(--ink)" font-family="monospace">| * c4d5e6f (feature/login) 加入驗證碼</text>
+  <text x="20" y="124" font-size="13" fill="var(--ink)" font-family="monospace">| * b3c4d5e 登入表單 UI</text>
+  <text x="20" y="148" font-size="13" fill="var(--ink)" font-family="monospace">|/</text>
+  <text x="20" y="172" font-size="13" fill="var(--ink)" font-family="monospace">* a2b3c4d (tag: v1.0) 初版發佈</text>
+  <text x="20" y="196" font-size="13" fill="var(--ink)" font-family="monospace">* 1a2b3c4 初始 commit</text>
+</svg>
+<figcaption><code>--graph --decorate --all</code> 令分支結構一覽無遺，強烈建議設 alias：<code>git config --global alias.lg "log --oneline --graph --decorate --all"</code></figcaption>
+</figure>
+</div>
+
+<div class="cmd">
+<h3><span class="num">2</span><code>git show</code> — 睇某一個 commit 嘅詳情</h3>
+<div class="cb"><div class="cb-head">bash<button class="copy">複製</button></div><pre><code>git show                    # 最後一個 commit 嘅詳情＋diff
+git show 3f2a1b9            # 指定 commit
+git show HEAD~2             # 上兩代
+git show v1.0               # tag 都可以
+git show 3f2a1b9:src/app.js # 睇嗰個 commit 入面某個檔案嘅完整內容
+git show --stat 3f2a1b9     # 只要摘要，唔要 diff</code></pre></div>
+<table class="flags">
+<tr><th>Flag</th><th>作用</th></tr>
+<tr><td><code>--stat</code></td><td>摘要統計取代完整 diff</td></tr>
+<tr><td><code>--name-only</code> / <code>--name-status</code></td><td>只列檔名</td></tr>
+<tr><td><code>--oneline</code> / <code>-s</code>（<code>--no-patch</code>）</td><td>唔顯示 diff，淨係 metadata</td></tr>
+<tr><td><code>--pretty=format:...</code></td><td>自訂格式（同 log 一樣）</td></tr>
+</table>
+</div>
+
+<div class="cmd">
+<h3><span class="num">3</span><code>git blame</code> — 逐行追究「邊個寫嘅」</h3>
+<div class="cb"><div class="cb-head">bash<button class="copy">複製</button></div><pre><code>git blame app.js             # 每行顯示：commit hash、作者、日期
+git blame -L 10,25 app.js    # 淨係睇第 10–25 行
+git blame -w app.js          # 忽略空白改動（縮排調整唔再誤導）
+git blame -e app.js          # 顯示作者 email（--show-email）</code></pre></div>
+<table class="flags">
+<tr><th>Flag</th><th>作用</th></tr>
+<tr><td><code>-L &lt;起,止&gt;</code></td><td>限定行數範圍（亦支援 <code>-L 10,+5</code>）</td></tr>
+<tr><td><code>-w</code></td><td>忽略 whitespace 差異</td></tr>
+<tr><td><code>-M</code> / <code>-C</code></td><td>偵測喺檔案內搬過 / 由其他檔案複製過嚟嘅行，追返真正出處</td></tr>
+<tr><td><code>-e</code> / <code>--show-email</code></td><td>顯示 email 取代名</td></tr>
+<tr><td><code>--date=relative</code></td><td>日期用相對時間</td></tr>
+</table>
+<div class="tip"><span class="tag">貼士</span>blame 搵到嗰行嘅 commit 之後，用 <code>git show &lt;hash&gt;</code> 睇當時成個改動，先明白「點解」咁寫，唔好淨係睇「邊個」。</div>
+</div>
+
+<div class="cmd">
+<h3><span class="num">4</span><code>git shortlog</code> — 按作者統計</h3>
+<div class="cb"><div class="cb-head">bash<button class="copy">複製</button></div><pre><code>git shortlog -sn            # 每人 commit 數排行榜（release notes 好用）
+git shortlog -sne           # 連 email
+git shortlog v1.0..v2.0 -sn # 兩個版本之間</code></pre></div>
+<table class="flags">
+<tr><th>Flag</th><th>作用</th></tr>
+<tr><td><code>-s</code> / <code>--summary</code></td><td>只顯示數目，唔列 commit 標題</td></tr>
+<tr><td><code>-n</code> / <code>--numbered</code></td><td>按數量排序（預設按名排）</td></tr>
+<tr><td><code>-e</code> / <code>--email</code></td><td>顯示 email</td></tr>
+</table>
+</div>
+
+<div class="cmd">
+<h3><span class="num">5</span><code>git reflog</code> — 你嘅救命恩人（記錄 HEAD 去過邊）</h3>
+<p class="lead">reflog 記錄咗 <b>HEAD 嘅每一次移動</b>——包括 commit、checkout、reset、rebase。就算你用 <code>reset --hard</code> 刪咗 commit，reflog 都仲記得佢哋，可以救返。</p>
+<div class="cb"><div class="cb-head">bash<button class="copy">複製</button></div><pre><code>git reflog                    # 列出 HEAD 嘅移動歷史
+git reflog -20                # 淨係最近 20 條
+git reflog --date=relative    # 日期用相對時間
+
+# 輸出長咁樣（最左邊係 HEAD@{n} 位置名）：
+# 9c8d7e6 HEAD@{0}: reset: moving to HEAD~2
+# 3f2a1b9 HEAD@{1}: commit: 新增報表功能      ← 以為冇咗嘅 commit 喺度！
+# a1b2c3d HEAD@{2}: checkout: moving from feature to main</code></pre></div>
+<h4>實戰：救返 <code>reset --hard</code> 誤刪嘅 commit</h4>
+<div class="ba">
+<figure class="diagram"><span class="ba-cap">BEFORE：reset --hard 之後</span>
+<svg viewBox="0 0 360 120" width="360" role="img" aria-label="reset 後">
+  <line x1="50" y1="70" x2="110" y2="70" stroke="#2563eb" stroke-width="3"/>
+  <circle cx="50" cy="70" r="13" fill="#2563eb" stroke="#2563eb" stroke-width="2.5"/><text x="50" y="75" text-anchor="middle" font-size="11" fill="#fff">A</text>
+  <circle cx="110" cy="70" r="13" fill="#fff" stroke="#8b98a9" stroke-width="2" stroke-dasharray="4 3"/><text x="110" y="75" text-anchor="middle" font-size="11" fill="var(--muted)">B</text>
+  <circle cx="170" cy="70" r="13" fill="#fff" stroke="#8b98a9" stroke-width="2" stroke-dasharray="4 3"/><text x="170" y="75" text-anchor="middle" font-size="11" fill="var(--muted)">C</text>
+  <line x1="63" y1="70" x2="97" y2="70" stroke="#8b98a9" stroke-width="2" stroke-dasharray="4 3"/>
+  <line x1="123" y1="70" x2="157" y2="70" stroke="#8b98a9" stroke-width="2" stroke-dasharray="4 3"/>
+  <rect x="14" y="20" width="72" height="22" rx="11" fill="#2563eb"/><text x="50" y="35" text-anchor="middle" font-size="11" fill="#fff" font-weight="700">HEAD→main</text>
+  <text x="140" y="105" text-anchor="middle" font-size="11" fill="var(--muted)">B、C 喺 log 消失咗…</text>
+</svg></figure>
+<div class="ba-arrow">➜</div>
+<figure class="diagram"><span class="ba-cap">AFTER：reflog 搵返 + reset 返去</span>
+<svg viewBox="0 0 360 120" width="360" role="img" aria-label="救返之後">
+  <line x1="50" y1="70" x2="230" y2="70" stroke="#2563eb" stroke-width="3"/>
+  <circle cx="50" cy="70" r="13" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="50" y="75" text-anchor="middle" font-size="11" fill="var(--ink)">A</text>
+  <circle cx="140" cy="70" r="13" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="140" y="75" text-anchor="middle" font-size="11" fill="var(--ink)">B</text>
+  <circle cx="230" cy="70" r="13" fill="#2563eb" stroke="#2563eb" stroke-width="2.5"/><text x="230" y="75" text-anchor="middle" font-size="11" fill="#fff">C</text>
+  <rect x="194" y="20" width="72" height="22" rx="11" fill="#2563eb"/><text x="230" y="35" text-anchor="middle" font-size="11" fill="#fff" font-weight="700">HEAD→main</text>
+  <text x="140" y="105" text-anchor="middle" font-size="11" fill="#16a34a">git reset --hard HEAD@{1} 救返！</text>
+</svg></figure>
+</div>
+<div class="cb"><div class="cb-head">bash<button class="copy">複製</button></div><pre><code>git reflog                    # 搵返消失咗嘅 commit hash（例如 3f2a1b9）
+git reset --hard 3f2a1b9      # 直接指返去，嘢就返晒嚟
+# 或者保守啲，開個分支先睇睇：
+git branch rescue 3f2a1b9</code></pre></div>
+<div class="note"><span class="tag">記住</span>reflog 係<b>本地</b>嘅，預設保留 90 日（可達嘅）/ 30 日（不可達嘅）。口訣：<b>「喺 Git 度，只要你 commit 過，就好難真係整唔見。」</b></div>
+</div>
+</section>
+
+<!-- ==================== GITIGNORE ==================== -->
+<section class="sec" id="gitignore">
+<h2 class="sec-title"><code>.gitignore</code> — 叫 Git 唔好追蹤某啲檔案<a class="anchor" href="#gitignore">#</a></h2>
+<p class="sec-lead">喺 repo 根目錄開個叫 <code>.gitignore</code> 嘅檔案，逐行寫規則，Git 就會當嗰啲檔案透明。</p>
+<div class="cmd">
+<h3>規則語法</h3>
+<div class="cb"><div class="cb-head">.gitignore<button class="copy">複製</button></div><pre><code># 呢行係註解
+
+# 指定檔名（任何目錄層級都會中）
+.env
+*.log              # 萬用字元 *：所有 .log 檔
+temp?.txt          # ?：單一字元
+
+# 指定資料夾（結尾加 /）
+node_modules/
+dist/
+build/
+
+# 只限根目錄（開頭加 /）
+/TODO.txt          # 只有根目錄嘅 TODO.txt 中，子目錄嘅唔中
+
+# ** 跨多層目錄
+**/logs/debug.log
+
+# 反轉規則（!＝唔好忽略）
+*.log
+!important.log     # 但 important.log 例外，繼續追蹤</code></pre></div>
+<div class="cb"><div class="cb-head">bash<button class="copy">複製</button></div><pre><code># 檢查某個檔案俾邊條規則擋咗（debug .gitignore 必備）
+git check-ignore -v node_modules/express/index.js
+# 輸出：.gitignore:5:node_modules/   node_modules/express/index.js</code></pre></div>
+<table class="flags">
+<tr><th>符號</th><th>意思</th></tr>
+<tr><td><code>*</code></td><td>任意數量字元（唔跨 <code>/</code>）</td></tr>
+<tr><td><code>?</code></td><td>單一字元</td></tr>
+<tr><td><code>**</code></td><td>跨任意層目錄</td></tr>
+<tr><td><code>/</code> 開頭</td><td>由 repo 根目錄起計（唔係就任何層級都中）</td></tr>
+<tr><td><code>/</code> 結尾</td><td>係資料夾</td></tr>
+<tr><td><code>!</code> 開頭</td><td>例外：唔好忽略</td></tr>
+</table>
+<div class="warn"><span class="tag">常見伏位</span>.gitignore 只對<b>未追蹤</b>嘅檔案有效。如果個檔案一早 commit 咗，加落 .gitignore 都冇用，要先 <code>git rm --cached &lt;檔案&gt;</code> 停止追蹤。</div>
+<div class="tip"><span class="tag">貼士</span>想唔污染 repo 嘅 .gitignore，可以用個人專屬忽略檔 <code>.git/info/exclude</code>（唔會被 commit）；想全局忽略（例如 <code>.DS_Store</code>），用 <code>git config --global core.excludesFile ~/.gitignore_global</code>。</div>
+</div>
+</section>
+
+<!-- ==================== BRANCH ==================== -->
+<section class="sec" id="branch">
+<h2 class="sec-title"><code>git branch</code> / <code>git switch</code> / <code>git checkout</code> — 分支操作<a class="anchor" href="#branch">#</a></h2>
+<p class="sec-lead">分支係 Git 最強嘅功能：開一條分支只係「開一個指標」，零成本，放心開。</p>
+
+<div class="cmd">
+<h3><span class="num">1</span><code>git branch</code> — 建立、列出、刪除、改名</h3>
+<div class="ba">
+<figure class="diagram"><span class="ba-cap">BEFORE</span>
+<svg viewBox="0 0 340 100" width="340" role="img" aria-label="開分支前">
+  <line x1="50" y1="62" x2="250" y2="62" stroke="#2563eb" stroke-width="3"/>
+  <circle cx="50" cy="62" r="13" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="50" y="67" text-anchor="middle" font-size="11" fill="var(--ink)">A</text>
+  <circle cx="150" cy="62" r="13" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="150" y="67" text-anchor="middle" font-size="11" fill="var(--ink)">B</text>
+  <circle cx="250" cy="62" r="13" fill="#2563eb" stroke="#2563eb" stroke-width="2.5"/><text x="250" y="67" text-anchor="middle" font-size="11" fill="#fff">C</text>
+  <rect x="214" y="18" width="72" height="22" rx="11" fill="#2563eb"/><text x="250" y="33" text-anchor="middle" font-size="11" fill="#fff" font-weight="700">HEAD→main</text>
+</svg></figure>
+<div class="ba-arrow">➜</div>
+<figure class="diagram"><span class="ba-cap">AFTER：git branch feature</span>
+<svg viewBox="0 0 340 100" width="340" role="img" aria-label="開分支後">
+  <line x1="50" y1="62" x2="250" y2="62" stroke="#2563eb" stroke-width="3"/>
+  <circle cx="50" cy="62" r="13" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="50" y="67" text-anchor="middle" font-size="11" fill="var(--ink)">A</text>
+  <circle cx="150" cy="62" r="13" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="150" y="67" text-anchor="middle" font-size="11" fill="var(--ink)">B</text>
+  <circle cx="250" cy="62" r="13" fill="#2563eb" stroke="#2563eb" stroke-width="2.5"/><text x="250" y="67" text-anchor="middle" font-size="11" fill="#fff">C</text>
+  <rect x="214" y="14" width="72" height="22" rx="11" fill="#2563eb"/><text x="250" y="29" text-anchor="middle" font-size="11" fill="#fff" font-weight="700">HEAD→main</text>
+  <rect x="220" y="84" width="60" height="20" rx="10" fill="#16a34a"/><text x="250" y="98" text-anchor="middle" font-size="10.5" fill="#fff" font-weight="700">feature</text>
+</svg></figure>
+</div>
+<p class="mini">開分支唔會切換過去——只係多咗個指標指向 C。要切換先會郁 HEAD。</p>
+<div class="cb"><div class="cb-head">bash<button class="copy">複製</button></div><pre><code>git branch                      # 列出本地分支（* 號係而家嗰個）
+git branch feature              # 由而家位置開新分支
+git branch feature a1b2c3d      # 由指定 commit 開
+git branch -d feature           # 刪除（安全版：已合併先俾你刪）
+git branch -D feature           # 強制刪除（未合併都照刪，小心）
+git branch -m old-name new-name # 改名
+git branch -M new-name          # 強制改而家分支名（常用：master→main）</code></pre></div>
+<table class="flags">
+<tr><th>Flag</th><th>作用</th></tr>
+<tr><td><code>-v</code></td><td>列出分支＋每個分支最新 commit（verbose）</td></tr>
+<tr><td><code>-vv</code></td><td>再顯示追蹤緊邊個遠端分支、領先/落後幾多</td></tr>
+<tr><td><code>-a</code> / <code>--all</code></td><td>本地＋遠端追蹤分支全部列出</td></tr>
+<tr><td><code>-r</code> / <code>--remotes</code></td><td>只列遠端追蹤分支（origin/main 嗰啲）</td></tr>
+<tr><td><code>-d</code> / <code>--delete</code></td><td>刪除已合併分支（未合併會拒絕，保護你）</td></tr>
+<tr><td><code>-D</code></td><td>強制刪除（= <code>-d -f</code>）</td></tr>
+<tr><td><code>-m</code> / <code>--move</code></td><td>改名（<code>-M</code> 強制）</td></tr>
+<tr><td><code>-c</code> / <code>--copy</code></td><td>複製分支（<code>-C</code> 強制）</td></tr>
+<tr><td><code>--merged</code> / <code>--no-merged</code></td><td>只列已合併 / 未合併入而家分支嘅分支（大掃除用）</td></tr>
+<tr><td><code>--contains &lt;commit&gt;</code></td><td>邊啲分支包含呢個 commit</td></tr>
+<tr><td><code>--sort=-committerdate</code></td><td>按最近更新排序</td></tr>
+<tr><td><code>-u origin/main</code> / <code>--set-upstream-to</code></td><td>設定/更改追蹤嘅遠端分支</td></tr>
+<tr><td><code>--unset-upstream</code></td><td>取消追蹤</td></tr>
+</table>
+<div class="tip"><span class="tag">貼士</span>季尾大掃除：<code>git branch --merged | grep -v "main" | xargs git branch -d</code> 一次過刪晒已合併嘅分支。</div>
+</div>
+
+<div class="cmd">
+<h3><span class="num">2</span><code>git switch</code> — 切換分支（Git 2.23+，推薦）</h3>
+<div class="cb"><div class="cb-head">bash<button class="copy">複製</button></div><pre><code>git switch main              # 切去 main
+git switch -c feature        # 開新分支兼即刻切過去（create）
+git switch -C feature        # 同上，但分支已存在就強制重建
+git switch -                 # 返去頭先嗰個分支（超好用！）
+git switch --detach a1b2c3d  # 去某個 commit（detached HEAD，見下）</code></pre></div>
+<table class="flags">
+<tr><th>Flag</th><th>作用</th></tr>
+<tr><td><code>-c &lt;名&gt;</code> / <code>--create</code></td><td>建新分支並切換</td></tr>
+<tr><td><code>-C &lt;名&gt;</code> / <code>--force-create</code></td><td>強制重建同名分支</td></tr>
+<tr><td><code>-d</code> / <code>--detach</code></td><td>切去某 commit（不建分支），進入 detached HEAD</td></tr>
+<tr><td><code>-</code>（參數）</td><td>上一個分支</td></tr>
+<tr><td><code>-f</code> / <code>--force</code></td><td>丟棄工作目錄未 commit 嘅改動強行切換（小心）</td></tr>
+</table>
+</div>
+
+<div class="cmd">
+<h3><span class="num">3</span><code>git checkout</code> — 舊式萬用指令（認識吓好）</h3>
+<p class="lead">舊教學成日用 <code>checkout</code>，因為佢一個指令做晒「切分支、還原檔案」兩回事，容易混亂。Git 2.23 起拆咗做 <code>switch</code>（切分支）同 <code>restore</code>（還原檔案），但你仍然要識睇 checkout。</p>
+<div class="cb"><div class="cb-head">bash<button class="copy">複製</button></div><pre><code>git checkout main            # = git switch main
+git checkout -b feature      # = git switch -c feature
+git checkout -               # = git switch -
+git checkout a1b2c3d         # 去某個 commit（detached HEAD）
+git checkout -- app.js       # 丟棄 app.js 工作目錄嘅改動 = git restore app.js
+git checkout -- .            # 丟棄全部未暫存改動（危險！）
+git checkout HEAD~1 -- app.js  # 由上一個 commit 攞返 app.js 出嚟</code></pre></div>
+<div class="warn"><span class="tag">留意</span><code>git checkout -- &lt;檔案&gt;</code> 同 <code>git checkout &lt;分支&gt;</code> 只差一個 <code>--</code>，但一個係還原檔案、一個係切分支。呢個就係點解後來要拆做 switch / restore。</div>
+</div>
+
+<div class="cmd">
+<h3><span class="num">4</span>Detached HEAD — HEAD 直接指住 commit 嘅狀態</h3>
+<figure class="diagram">
+<svg viewBox="0 0 620 150" width="620" role="img" aria-label="detached HEAD">
+  <line x1="60" y1="80" x2="480" y2="80" stroke="#2563eb" stroke-width="3"/>
+  <circle cx="60" cy="80" r="13" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="60" y="85" text-anchor="middle" font-size="11" fill="var(--ink)">A</text>
+  <circle cx="200" cy="80" r="13" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="200" y="85" text-anchor="middle" font-size="11" fill="var(--ink)">B</text>
+  <circle cx="340" cy="80" r="13" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="340" y="85" text-anchor="middle" font-size="11" fill="var(--ink)">C</text>
+  <circle cx="480" cy="80" r="13" fill="#2563eb" stroke="#2563eb" stroke-width="2.5"/><text x="480" y="85" text-anchor="middle" font-size="11" fill="#fff">D</text>
+  <rect x="450" y="110" width="60" height="22" rx="11" fill="#2563eb"/><text x="480" y="125" text-anchor="middle" font-size="11" fill="#fff" font-weight="700">main</text>
+  <rect x="170" y="20" width="60" height="24" rx="12" fill="#f05133"/><text x="200" y="36" text-anchor="middle" font-size="11.5" fill="#fff" font-weight="700">HEAD</text>
+  <line x1="200" y1="44" x2="200" y2="65" stroke="#f05133" stroke-width="2"/>
+  <text x="200" y="125" text-anchor="middle" font-size="11.5" fill="var(--muted)">HEAD 直接指住 B，冇經任何分支</text>
+</svg>
+<figcaption><code>git checkout B</code> 之後：HEAD 唔再指住分支，呢個狀態叫 detached HEAD。睇舊 code、試嘢冇問題</figcaption>
+</figure>
+<div class="warn"><span class="tag">小心</span>喺 detached HEAD 狀態做嘅 commit <b>冇分支指住佢哋</b>，一切走就好快搵唔返（要靠 reflog）。想保留實驗結果，記得即刻開分支：<code>git switch -c my-experiment</code>。</div>
+</div>
+</section>
+
+<!-- ==================== MERGE ==================== -->
+<section class="sec" id="merge">
+<h2 class="sec-title"><code>git merge</code> — 合併分支<a class="anchor" href="#merge">#</a></h2>
+<p class="sec-lead">合併有兩種結果：Fast-forward（直線推前）同 Merge commit（三路合併）。睇明下面兩幅圖就畢業。</p>
+
+<div class="cmd">
+<h3><span class="num">1</span>Fast-forward（預設，當主線冇新 commit）</h3>
+<div class="ba">
+<figure class="diagram"><span class="ba-cap">BEFORE</span>
+<svg viewBox="0 0 380 130" width="380" role="img" aria-label="ff 之前">
+  <line x1="50" y1="50" x2="150" y2="50" stroke="#2563eb" stroke-width="3"/>
+  <line x1="150" y1="50" x2="230" y2="95" stroke="#16a34a" stroke-width="3"/>
+  <line x1="230" y1="95" x2="320" y2="95" stroke="#16a34a" stroke-width="3"/>
+  <circle cx="50" cy="50" r="13" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="50" y="55" text-anchor="middle" font-size="11" fill="var(--ink)">A</text>
+  <circle cx="150" cy="50" r="13" fill="#2563eb" stroke="#2563eb" stroke-width="2.5"/><text x="150" y="55" text-anchor="middle" font-size="11" fill="#fff">B</text>
+  <circle cx="230" cy="95" r="13" fill="#fff" stroke="#16a34a" stroke-width="2.5"/><text x="230" y="100" text-anchor="middle" font-size="11" fill="var(--ink)">C</text>
+  <circle cx="320" cy="95" r="13" fill="#16a34a" stroke="#16a34a" stroke-width="2.5"/><text x="320" y="100" text-anchor="middle" font-size="11" fill="#fff">D</text>
+  <rect x="100" y="14" width="100" height="22" rx="11" fill="#2563eb"/><text x="150" y="29" text-anchor="middle" font-size="10.5" fill="#fff" font-weight="700">HEAD→main</text>
+  <rect x="288" y="110" width="64" height="20" rx="10" fill="#16a34a"/><text x="320" y="124" text-anchor="middle" font-size="10.5" fill="#fff" font-weight="700">feature</text>
+</svg></figure>
+<div class="ba-arrow">➜</div>
+<figure class="diagram"><span class="ba-cap">AFTER：git merge feature</span>
+<svg viewBox="0 0 380 130" width="380" role="img" aria-label="ff 之後">
+  <line x1="50" y1="50" x2="150" y2="50" stroke="#2563eb" stroke-width="3"/>
+  <line x1="150" y1="50" x2="230" y2="95" stroke="#16a34a" stroke-width="3"/>
+  <line x1="230" y1="95" x2="320" y2="95" stroke="#16a34a" stroke-width="3"/>
+  <circle cx="50" cy="50" r="13" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="50" y="55" text-anchor="middle" font-size="11" fill="var(--ink)">A</text>
+  <circle cx="150" cy="50" r="13" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="150" y="55" text-anchor="middle" font-size="11" fill="var(--ink)">B</text>
+  <circle cx="230" cy="95" r="13" fill="#fff" stroke="#16a34a" stroke-width="2.5"/><text x="230" y="100" text-anchor="middle" font-size="11" fill="var(--ink)">C</text>
+  <circle cx="320" cy="95" r="13" fill="#16a34a" stroke="#16a34a" stroke-width="2.5"/><text x="320" y="100" text-anchor="middle" font-size="11" fill="#fff">D</text>
+  <rect x="236" y="110" width="168" height="20" rx="10" fill="#7c3aed"/><text x="320" y="124" text-anchor="middle" font-size="10.5" fill="#fff" font-weight="700">HEAD→main, feature</text>
+  <text x="185" y="30" text-anchor="middle" font-size="11.5" fill="var(--muted)">main 只係「推前」到 D，冇新 commit</text>
+</svg></figure>
+</div>
+<p class="mini">main 由 B 分支出嚟之後冇郁過，所以 Git 直接將 main 指標「快進」去 D——唔使做任何合併，歷史係一條直線。</p>
+</div>
+
+<div class="cmd">
+<h3><span class="num">2</span>真正嘅三路合併（兩邊都有新 commit）</h3>
+<div class="ba">
+<figure class="diagram"><span class="ba-cap">BEFORE</span>
+<svg viewBox="0 0 380 150" width="380" role="img" aria-label="merge 之前">
+  <line x1="50" y1="75" x2="150" y2="75" stroke="#2563eb" stroke-width="3"/>
+  <line x1="150" y1="75" x2="240" y2="35" stroke="#2563eb" stroke-width="3"/>
+  <line x1="150" y1="75" x2="240" y2="115" stroke="#16a34a" stroke-width="3"/>
+  <line x1="240" y1="115" x2="320" y2="115" stroke="#16a34a" stroke-width="3"/>
+  <circle cx="50" cy="75" r="13" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="50" y="80" text-anchor="middle" font-size="11" fill="var(--ink)">A</text>
+  <circle cx="150" cy="75" r="13" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="150" y="80" text-anchor="middle" font-size="11" fill="var(--ink)">B</text>
+  <circle cx="240" cy="35" r="13" fill="#2563eb" stroke="#2563eb" stroke-width="2.5"/><text x="240" y="40" text-anchor="middle" font-size="11" fill="#fff">E</text>
+  <circle cx="240" cy="115" r="13" fill="#fff" stroke="#16a34a" stroke-width="2.5"/><text x="240" y="120" text-anchor="middle" font-size="11" fill="var(--ink)">C</text>
+  <circle cx="320" cy="115" r="13" fill="#16a34a" stroke="#16a34a" stroke-width="2.5"/><text x="320" y="120" text-anchor="middle" font-size="11" fill="#fff">D</text>
+  <rect x="208" y="6" width="64" height="20" rx="10" fill="#2563eb"/><text x="240" y="20" text-anchor="middle" font-size="10.5" fill="#fff" font-weight="700">main</text>
+  <rect x="288" y="130" width="64" height="20" rx="10" fill="#16a34a"/><text x="320" y="144" text-anchor="middle" font-size="10.5" fill="#fff" font-weight="700">feature</text>
+</svg></figure>
+<div class="ba-arrow">➜</div>
+<figure class="diagram"><span class="ba-cap">AFTER：產生 merge commit M</span>
+<svg viewBox="0 0 380 150" width="380" role="img" aria-label="merge 之後">
+  <line x1="50" y1="75" x2="150" y2="75" stroke="#2563eb" stroke-width="3"/>
+  <line x1="150" y1="75" x2="240" y2="35" stroke="#2563eb" stroke-width="3"/>
+  <line x1="150" y1="75" x2="240" y2="115" stroke="#16a34a" stroke-width="3"/>
+  <line x1="240" y1="115" x2="310" y2="115" stroke="#16a34a" stroke-width="3"/>
+  <line x1="240" y1="35" x2="330" y2="62" stroke="#2563eb" stroke-width="3"/>
+  <line x1="310" y1="115" x2="340" y2="90" stroke="#16a34a" stroke-width="3"/>
+  <circle cx="50" cy="75" r="13" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="50" y="80" text-anchor="middle" font-size="11" fill="var(--ink)">A</text>
+  <circle cx="150" cy="75" r="13" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="150" y="80" text-anchor="middle" font-size="11" fill="var(--ink)">B</text>
+  <circle cx="240" cy="35" r="13" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="240" y="40" text-anchor="middle" font-size="11" fill="var(--ink)">E</text>
+  <circle cx="240" cy="115" r="13" fill="#fff" stroke="#16a34a" stroke-width="2.5"/><text x="240" y="120" text-anchor="middle" font-size="11" fill="var(--ink)">C</text>
+  <circle cx="310" cy="115" r="13" fill="#16a34a" stroke="#16a34a" stroke-width="2.5"/><text x="310" y="120" text-anchor="middle" font-size="11" fill="#fff">D</text>
+  <circle cx="345" cy="75" r="14" fill="#7c3aed" stroke="#7c3aed" stroke-width="2.5"/><text x="345" y="80" text-anchor="middle" font-size="11" fill="#fff">M</text>
+  <rect x="305" y="6" width="80" height="20" rx="10" fill="#2563eb"/><text x="345" y="20" text-anchor="middle" font-size="10.5" fill="#fff" font-weight="700">HEAD→main</text>
+</svg></figure>
+</div>
+<p class="mini">M 係一個有<b>兩個父 commit</b>（E 同 D）嘅新 commit，記錄咗「呢兩條線喺度合併」。</p>
+<div class="cb"><div class="cb-head">bash<button class="copy">複製</button></div><pre><code>git switch main
+git merge feature                  # 將 feature 合入 main
+git merge feature -m "合併登入功能"  # 自訂 merge commit message</code></pre></div>
+<table class="flags">
+<tr><th>Flag</th><th>作用</th></tr>
+<tr><td><code>--ff</code>（預設）</td><td>可以 fast-forward 就 fast-forward</td></tr>
+<tr><td><code>--no-ff</code></td><td><b>禁止</b> fast-forward：一定可以 ff 都照樣開 merge commit，保留「呢度曾經係一條分支」嘅記錄（團隊常用）</td></tr>
+<tr><td><code>--ff-only</code></td><td>只接受 fast-forward；唔得就拒絕執行（強迫你 rebase 先，歷史保持直線）</td></tr>
+<tr><td><code>--squash</code></td><td>將對方分支全部 commit 壓縮成「工作目錄入面嘅一堆改動」，由你自己開<b>一個</b>普通 commit（對方歷史唔會入嚟）</td></tr>
+<tr><td><code>--abort</code></td><td>合併中途（衝突中）放棄，返去合併前狀態</td></tr>
+<tr><td><code>--continue</code></td><td>解決完衝突後繼續完成合併</td></tr>
+<tr><td><code>-m "&lt;訊息&gt;"</code></td><td>merge commit 嘅 message</td></tr>
+<tr><td><code>--no-edit</code></td><td>用預設 message，唔開編輯器</td></tr>
+<tr><td><code>-X ours</code> / <code>-X theirs</code></td><td>衝突時自動偏向「我哋」/「佢哋」嗰邊（唔係揀晒全部，只係衝突位自動揀）</td></tr>
+<tr><td><code>-s ours</code></td><td>策略：直接當我哋贏晒，完全忽略對方改動（少用）</td></tr>
+<tr><td><code>-v</code> / <code>--verbose</code></td><td>顯示詳細合併過程</td></tr>
+</table>
+</div>
+
+<div class="cmd">
+<h3><span class="num">3</span>衝突（conflict）處理四步曲</h3>
+<p class="lead">兩邊改咗同一檔案嘅同一行，Git 唔敢幫你揀，就會衝突。衝突唔係壞事，係 Git 叫你親自確認。</p>
+<div class="cb"><div class="cb-head">app.js（衝突標記）<button class="copy">複製</button></div><pre><code>&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD
+const theme = "dark";       ← 你（main）嘅版本
+=======
+const theme = "light";      ← 對方（feature）嘅版本
+&gt;&gt;&gt;&gt;&gt;&gt;&gt; feature</code></pre></div>
+<div class="cb"><div class="cb-head">bash<button class="copy">複製</button></div><pre><code># 第 1 步：merge 見到 CONFLICT，唔使驚
+git merge feature
+# Auto-merging app.js
+# CONFLICT (content): Merge conflict in app.js
+
+# 第 2 步：睇邊啲檔案衝突
+git status          # both modified: app.js
+
+# 第 3 步：手動編輯，刪走 &lt;&lt;&lt;&lt;&lt;&lt;&lt;、=======、&gt;&gt;&gt;&gt;&gt;&gt;&gt; 標記，留返要嘅內容
+# （或者一鍵揀邊：）
+git checkout --ours app.js     # 全檔案用我哋版本
+git checkout --theirs app.js   # 全檔案用佢哋版本
+
+# 第 4 步：標記已解決，完成 merge
+git add app.js
+git commit                     # 或 git merge --continue
+
+# 中途想放棄成個 merge：
+git merge --abort</code></pre></div>
+<div class="tip"><span class="tag">貼士</span><code>git config --global merge.conflictStyle zdiff3</code>（或 <code>diff3</code>）會喺衝突標記中間多顯示「合併前原文」，更易判斷。視覺化工具可以用 <code>git mergetool</code>。</div>
+</div>
+</section>
+
+<!-- ==================== REBASE ==================== -->
+<section class="sec" id="rebase">
+<h2 class="sec-title"><code>git rebase</code> — 改寫歷史嘅利器<a class="anchor" href="#rebase">#</a></h2>
+<p class="sec-lead">Rebase ＝「將你嘅 commit 剪走，貼去另一個起點上面」。效果係歷史變成一條直線，睇落乾淨好多。</p>
+
+<div class="cmd">
+<h3><span class="num">1</span>基本 rebase：將 feature 搬到 main 最新位置</h3>
+<div class="ba">
+<figure class="diagram"><span class="ba-cap">BEFORE</span>
+<svg viewBox="0 0 380 150" width="380" role="img" aria-label="rebase 之前">
+  <line x1="50" y1="75" x2="150" y2="75" stroke="#2563eb" stroke-width="3"/>
+  <line x1="150" y1="75" x2="240" y2="35" stroke="#2563eb" stroke-width="3"/>
+  <line x1="150" y1="75" x2="240" y2="115" stroke="#16a34a" stroke-width="3"/>
+  <line x1="240" y1="115" x2="320" y2="115" stroke="#16a34a" stroke-width="3"/>
+  <circle cx="50" cy="75" r="13" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="50" y="80" text-anchor="middle" font-size="11" fill="var(--ink)">A</text>
+  <circle cx="150" cy="75" r="13" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="150" y="80" text-anchor="middle" font-size="11" fill="var(--ink)">B</text>
+  <circle cx="240" cy="35" r="13" fill="#2563eb" stroke="#2563eb" stroke-width="2.5"/><text x="240" y="40" text-anchor="middle" font-size="11" fill="#fff">E</text>
+  <circle cx="240" cy="115" r="13" fill="#fff" stroke="#16a34a" stroke-width="2.5"/><text x="240" y="120" text-anchor="middle" font-size="11" fill="var(--ink)">C</text>
+  <circle cx="320" cy="115" r="13" fill="#16a34a" stroke="#16a34a" stroke-width="2.5"/><text x="320" y="120" text-anchor="middle" font-size="11" fill="#fff">D</text>
+  <rect x="208" y="6" width="64" height="20" rx="10" fill="#2563eb"/><text x="240" y="20" text-anchor="middle" font-size="10.5" fill="#fff" font-weight="700">main</text>
+  <rect x="268" y="130" width="104" height="20" rx="10" fill="#16a34a"/><text x="320" y="144" text-anchor="middle" font-size="10.5" fill="#fff" font-weight="700">HEAD→feature</text>
+</svg></figure>
+<div class="ba-arrow">➜</div>
+<figure class="diagram"><span class="ba-cap">AFTER：git rebase main</span>
+<svg viewBox="0 0 380 150" width="380" role="img" aria-label="rebase 之後">
+  <line x1="40" y1="75" x2="200" y2="75" stroke="#2563eb" stroke-width="3"/>
+  <line x1="200" y1="75" x2="340" y2="75" stroke="#16a34a" stroke-width="3"/>
+  <circle cx="40" cy="75" r="13" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="40" y="80" text-anchor="middle" font-size="11" fill="var(--ink)">A</text>
+  <circle cx="120" cy="75" r="13" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="120" y="80" text-anchor="middle" font-size="11" fill="var(--ink)">B</text>
+  <circle cx="200" cy="75" r="13" fill="#2563eb" stroke="#2563eb" stroke-width="2.5"/><text x="200" y="80" text-anchor="middle" font-size="11" fill="#fff">E</text>
+  <circle cx="270" cy="75" r="13" fill="#fff" stroke="#16a34a" stroke-width="2.5"/><text x="270" y="80" text-anchor="middle" font-size="11" fill="var(--ink)">C'</text>
+  <circle cx="340" cy="75" r="13" fill="#16a34a" stroke="#16a34a" stroke-width="2.5"/><text x="340" y="80" text-anchor="middle" font-size="11" fill="#fff">D'</text>
+  <rect x="168" y="18" width="64" height="20" rx="10" fill="#2563eb"/><text x="200" y="32" text-anchor="middle" font-size="10.5" fill="#fff" font-weight="700">main</text>
+  <rect x="288" y="18" width="104" height="20" rx="10" fill="#16a34a"/><text x="340" y="32" text-anchor="middle" font-size="10.5" fill="#fff" font-weight="700">HEAD→feature</text>
+  <circle cx="120" cy="120" r="11" fill="#fff" stroke="#8b98a9" stroke-width="2" stroke-dasharray="4 3"/><text x="120" y="124" text-anchor="middle" font-size="10" fill="var(--muted)">C</text>
+  <circle cx="170" cy="120" r="11" fill="#fff" stroke="#8b98a9" stroke-width="2" stroke-dasharray="4 3"/><text x="170" y="124" text-anchor="middle" font-size="10" fill="var(--muted)">D</text>
+  <text x="145" y="142" text-anchor="middle" font-size="10.5" fill="var(--muted)">舊 C、D 變孤兒（reflog 搵到）</text>
+</svg></figure>
+</div>
+<p class="mini">C、D 被「複製」成 C'、D'（內容一樣，hash 唔同），接咗喺 E 後面。之後 main merge feature 就一定係 fast-forward，歷史一條直線。</p>
+<div class="cb"><div class="cb-head">bash<button class="copy">複製</button></div><pre><code>git switch feature
+git rebase main          # 將 feature 搬到 main 最新 commit 之上
+
+# 或者唔使切換，一句搞掂（意思：將 feature rebase 上 main）：
+git rebase main feature</code></pre></div>
+<table class="flags">
+<tr><th>Flag / 形式</th><th>作用</th></tr>
+<tr><td><code>git rebase main</code></td><td>將而家分支搬上 main 最新位置</td></tr>
+<tr><td><code>git rebase &lt;基礎&gt; &lt;分支&gt;</code></td><td>唔使先 checkout，直接 rebase 指定分支</td></tr>
+<tr><td><code>--onto &lt;新基礎&gt; &lt;舊基礎&gt; &lt;分支&gt;</code></td><td>進階搬家：「將 &lt;舊基礎&gt; 之後嘅 commit 搬去 &lt;新基礎&gt; 上面」</td></tr>
+<tr><td><code>-i</code> / <code>--interactive</code></td><td>互動模式：改寫、合併、刪除、重排 commit（見下）</td></tr>
+<tr><td><code>--continue</code></td><td>解決完衝突後繼續</td></tr>
+<tr><td><code>--skip</code></td><td>跳過呢個 commit（解唔到衝突、想放棄佢時）</td></tr>
+<tr><td><code>--abort</code></td><td>中途放棄，完全還原到 rebase 之前</td></tr>
+<tr><td><code>--autostash</code></td><td>有未 commit 改動時自動 stash，完成後自動還原</td></tr>
+<tr><td><code>--autosquash</code></td><td>配 <code>-i</code>：自動排列 <code>fixup!</code> / <code>squash!</code> commit</td></tr>
+</table>
+<h4><code>--onto</code> 範例：搬走其中一段分支</h4>
+<div class="cb"><div class="cb-head">bash<button class="copy">複製</button></div><pre><code># 情境：feature 由 develop 分出嚟，但你想佢變成由 main 分出
+git rebase --onto main develop feature
+# 意思：攞「develop..feature」嗰段 commit，貼去 main 上面</code></pre></div>
+</div>
+
+<div class="cmd">
+<h3><span class="num">2</span><code>git rebase -i</code> 互動模式 — 整理 commit 歷史</h3>
+<div class="cb"><div class="cb-head">bash<button class="copy">複製</button></div><pre><code>git rebase -i HEAD~3       # 整理最近 3 個 commit（會開編輯器）</code></pre></div>
+<p>編輯器會列出 commit（<b>最舊喺最上面</b>，同 log 倒轉！），你改每行開頭嘅指令字：</p>
+<div class="cb"><div class="cb-head">rebase 待辦清單例子<button class="copy">複製</button></div><pre><code>pick   a1b2c3d 加入登入表單
+reword e4f5g6h 修typo              ← 改 commit message
+squash i7j8k9l 登入驗證邏輯         ← 併入上一個（message 會合併）
+fixup  m0n1o2p 漏咗個檔             ← 併入上一個（丟棄佢嘅 message）
+drop   q3r4s5t debug 用嘅臨時嘢     ← 直接刪除
+edit   u6v7w8x 加入測試             ← 停喺度俾你改內容</code></pre></div>
+<table class="flags">
+<tr><th>指令（縮寫）</th><th>作用</th></tr>
+<tr><td><code>pick</code>（p）</td><td>照用呢個 commit</td></tr>
+<tr><td><code>reword</code>（r）</td><td>用呢個 commit，但改 message</td></tr>
+<tr><td><code>edit</code>（e）</td><td>停低俾你改內容（改完 <code>git commit --amend</code> 再 <code>git rebase --continue</code>）</td></tr>
+<tr><td><code>squash</code>（s）</td><td>併入上一個 commit，message 兩條合併俾你改</td></tr>
+<tr><td><code>fixup</code>（f）</td><td>併入上一個 commit，丟棄自己嘅 message</td></tr>
+<tr><td><code>drop</code>（d）</td><td>刪除呢個 commit</td></tr>
+<tr><td><code>exec</code>（x）</td><td>喺呢個位置執行 shell 指令（如 <code>exec npm test</code>）</td></tr>
+</table>
+<p class="mini">重排：直接上下調換行嘅順序就得。刪走一行＝drop。</p>
+<div class="tip"><span class="tag">貼士</span>配套技巧：<code>git commit --fixup &lt;目標commit&gt;</code> 整一個 fixup commit，之後 <code>git rebase -i --autosquash main</code> 會自動幫你排好位合併。</div>
+<div class="danger"><span class="tag">黃金法則</span><b>永遠唔好 rebase 已經 push 咗、其他人可能用緊嘅 commit。</b>Rebase 會改寫 hash，隊友嘅歷史會同你分岔，之後 merge 會變災難。口訣：<b>「未 push 先好 rebase。」</b></div>
+<h4>rebase vs merge 點揀？</h4>
+<table class="flags">
+<tr><th></th><th>merge</th><th>rebase</th></tr>
+<tr><td>歷史</td><td>保留真實分支結構（有 merge commit）</td><td>一條直線，乾淨</td></tr>
+<tr><td>改寫歷史</td><td>唔會</td><td>會（hash 全變）</td></tr>
+<tr><td>衝突</td><td>解一次</td><td>逐個 commit 解（可能幾次）</td></tr>
+<tr><td>適合</td><td>合併已完成嘅功能、公開分支</td><td>本地執靚自己啲 commit 先 push</td></tr>
+</table>
+</div>
+</section>
+
+<!-- ==================== UNDO ==================== -->
+<section class="sec" id="undo">
+<h2 class="sec-title">復原與撤銷：<code>restore</code> / <code>reset</code> / <code>revert</code> / <code>clean</code><a class="anchor" href="#undo">#</a></h2>
+<p class="sec-lead">四個「後悔藥」，藥效唔同、危險程度唔同。睇清楚邊隻啱你而家嘅情況。</p>
+
+<div class="cmd">
+<h3>快速選擇指南</h3>
+<table class="flags">
+<tr><th>你想…</th><th>用</th><th>危險度</th></tr>
+<tr><td>丟棄某檔案<b>未 add</b> 嘅改動</td><td><code>git restore &lt;檔案&gt;</code></td><td>中（改動真係會冇咗）</td></tr>
+<tr><td>將已 add 嘅嘢<b>拎返出</b>暫存區（改動保留）</td><td><code>git restore --staged &lt;檔案&gt;</code></td><td>低</td></tr>
+<tr><td>撤銷最近 commit，<b>保留改動</b>喺工作目錄</td><td><code>git reset --soft/--mixed HEAD~1</code></td><td>低-中</td></tr>
+<tr><td>撤銷最近 commit，<b>改動都唔要</b></td><td><code>git reset --hard HEAD~1</code></td><td>高</td></tr>
+<tr><td>撤銷<b>已 push</b> 嘅 commit（安全做法）</td><td><code>git revert &lt;commit&gt;</code></td><td>低</td></tr>
+<tr><td>刪走 <b>untracked</b> 檔案（node_modules 重建嗰類）</td><td><code>git clean -fd</code></td><td>高</td></tr>
+</table>
+</div>
+
+<div class="cmd">
+<h3><span class="num">1</span><code>git restore</code> — 還原檔案（Git 2.23+）</h3>
+<div class="cb"><div class="cb-head">bash<button class="copy">複製</button></div><pre><code>git restore app.js                    # 丟棄 app.js 工作目錄嘅改動（用暫存區版本覆蓋）
+git restore .                         # 丟棄全部未暫存改動
+git restore --staged app.js           # 將 app.js 拎出暫存區（unstage，改動保留喺工作目錄）
+git restore --staged --worktree app.js  # 暫存區＋工作目錄都還原去 HEAD
+git restore --source=HEAD~2 app.js    # 由兩代前嘅 commit 攞返 app.js 出嚟
+git restore -p app.js                 # 互動模式：逐塊揀還唔還原</code></pre></div>
+<table class="flags">
+<tr><th>Flag</th><th>作用</th></tr>
+<tr><td><code>--staged</code> / <code>-S</code></td><td>還原暫存區（預設來源係 HEAD）</td></tr>
+<tr><td><code>--worktree</code> / <code>-W</code></td><td>還原工作目錄（預設行為；預設來源係暫存區）</td></tr>
+<tr><td><code>--source=&lt;commit&gt;</code> / <code>-s</code></td><td>指定由邊個 commit 攞版本</td></tr>
+<tr><td><code>-p</code> / <code>--patch</code></td><td>互動逐塊揀</td></tr>
+</table>
+<p class="mini">對照舊寫法：<code>git checkout -- app.js</code> ≈ <code>git restore app.js</code>；<code>git reset HEAD app.js</code> ≈ <code>git restore --staged app.js</code>。</p>
+</div>
+
+<div class="cmd">
+<h3><span class="num">2</span><code>git reset</code> — 移動分支指標（三種模式）</h3>
+<p class="lead">reset 做嘅嘢係「將而家分支（連 HEAD）指去另一個 commit」。三個模式分別在於：<b>郁完之後，暫存區同工作目錄跟唔跟住郁</b>。</p>
+<figure class="diagram">
+<svg viewBox="0 0 720 250" width="720" role="img" aria-label="reset 三模式">
+  <text x="20" y="20" font-size="13.5" font-weight="700" fill="var(--ink)">git reset &lt;模式&gt; HEAD~1（由 C 返去 B）之後：</text>
+  <!-- soft -->
+  <rect x="20" y="40" width="210" height="185" rx="12" fill="none" stroke="#16a34a" stroke-width="2"/>
+  <text x="125" y="62" text-anchor="middle" font-size="13" font-weight="700" fill="#16a34a">--soft</text>
+  <text x="125" y="90" text-anchor="middle" font-size="12" fill="var(--ink)">分支指標：郁 ✅</text>
+  <text x="125" y="112" text-anchor="middle" font-size="12" fill="var(--ink)">暫存區：唔郁 ❌</text>
+  <text x="125" y="134" text-anchor="middle" font-size="12" fill="var(--ink)">工作目錄：唔郁 ❌</text>
+  <text x="125" y="168" text-anchor="middle" font-size="11.5" fill="var(--muted)">C 嘅改動仲喺暫存區</text>
+  <text x="125" y="188" text-anchor="middle" font-size="11.5" fill="var(--muted)">→ 即刻可以再 commit</text>
+  <text x="125" y="210" text-anchor="middle" font-size="11.5" fill="#16a34a">用途：改 commit message / 合併幾個 commit</text>
+  <!-- mixed -->
+  <rect x="255" y="40" width="210" height="185" rx="12" fill="none" stroke="#ea580c" stroke-width="2"/>
+  <text x="360" y="62" text-anchor="middle" font-size="13" font-weight="700" fill="#ea580c">--mixed（預設）</text>
+  <text x="360" y="90" text-anchor="middle" font-size="12" fill="var(--ink)">分支指標：郁 ✅</text>
+  <text x="360" y="112" text-anchor="middle" font-size="12" fill="var(--ink)">暫存區：郁 ✅</text>
+  <text x="360" y="134" text-anchor="middle" font-size="12" fill="var(--ink)">工作目錄：唔郁 ❌</text>
+  <text x="360" y="168" text-anchor="middle" font-size="11.5" fill="var(--muted)">C 嘅改動變返未暫存</text>
+  <text x="360" y="188" text-anchor="middle" font-size="11.5" fill="var(--muted)">→ 可以揀住重新 add</text>
+  <text x="360" y="210" text-anchor="middle" font-size="11.5" fill="#ea580c">用途：commit 咗唔該暫存嘅嘢，拆返散</text>
+  <!-- hard -->
+  <rect x="490" y="40" width="210" height="185" rx="12" fill="none" stroke="#dc2626" stroke-width="2"/>
+  <text x="595" y="62" text-anchor="middle" font-size="13" font-weight="700" fill="#dc2626">--hard</text>
+  <text x="595" y="90" text-anchor="middle" font-size="12" fill="var(--ink)">分支指標：郁 ✅</text>
+  <text x="595" y="112" text-anchor="middle" font-size="12" fill="var(--ink)">暫存區：郁 ✅</text>
+  <text x="595" y="134" text-anchor="middle" font-size="12" fill="var(--ink)">工作目錄：郁 ✅</text>
+  <text x="595" y="168" text-anchor="middle" font-size="11.5" fill="var(--muted)">C 嘅改動徹底消失</text>
+  <text x="595" y="188" text-anchor="middle" font-size="11.5" fill="var(--muted)">→ 乜都冇晒，乾淨</text>
+  <text x="595" y="210" text-anchor="middle" font-size="11.5" fill="#dc2626">用途：完全放棄改動（要靠 reflog 先救得返）</text>
+</svg>
+<figcaption>三個模式嘅分別：指標一定郁；暫存區同工項目錄郁唔郁，睇你用邊隻</figcaption>
+</figure>
+<div class="cb"><div class="cb-head">bash<button class="copy">複製</button></div><pre><code>git reset --soft HEAD~1      # 撤銷 commit，改動留喺暫存區（最溫柔）
+git reset HEAD~1             # = --mixed：撤銷 commit，改動變返未暫存
+git reset --hard HEAD~1      # 撤銷 commit，改動全部丟棄（最粗暴）
+git reset --hard HEAD        # 唔郁指標，只係丟棄晒工作目錄＋暫存區改動
+git reset a1b2c3d            # 返去指定 commit（mixed）
+git reset app.js             # 只將 app.js 拎出暫存區（= restore --staged）</code></pre></div>
+<table class="flags">
+<tr><th>Flag / 形式</th><th>作用</th></tr>
+<tr><td><code>--soft</code></td><td>只郁分支指標</td></tr>
+<tr><td><code>--mixed</code>（預設）</td><td>郁指標＋重設暫存區</td></tr>
+<tr><td><code>--hard</code></td><td>郁指標＋重設暫存區＋重設工作目錄</td></tr>
+<tr><td><code>--keep</code></td><td>類似 hard，但有未 commit 改動同目標有衝突時會拒絕（保護改動）</td></tr>
+<tr><td><code>HEAD~&lt;n&gt;</code></td><td>上 n 代 commit</td></tr>
+<tr><td><code>&lt;檔案&gt;</code>（不連模式）</td><td>檔案層級：只 unstage，唔郁指標</td></tr>
+<tr><td><code>-q</code></td><td>靜音</td></tr>
+</table>
+<div class="danger"><span class="tag">危險</span><code>reset --hard</code> 係少數真係會整唔見嘢嘅指令（未 commit 嘅改動救唔返）。已 commit 嘅就可以靠 <code>git reflog</code> 搵返。已 push 嘅 commit 唔好用 reset，要用 revert。</div>
+</div>
+
+<div class="cmd">
+<h3><span class="num">3</span><code>git revert</code> — 安全撤銷（開個「反向 commit」）</h3>
+<p class="lead">reset 係「時光倒流改寫歷史」，revert 係「開一個新 commit 做相反嘅改動」——歷史唔變，所以 <b>push 咗嘅嘢都用得</b>。</p>
+<div class="ba">
+<figure class="diagram"><span class="ba-cap">reset --hard HEAD~1（改寫歷史）</span>
+<svg viewBox="0 0 340 110" width="340" role="img" aria-label="reset 圖">
+  <line x1="50" y1="60" x2="170" y2="60" stroke="#2563eb" stroke-width="3"/>
+  <circle cx="50" cy="60" r="13" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="50" y="65" text-anchor="middle" font-size="11" fill="var(--ink)">A</text>
+  <circle cx="110" cy="60" r="13" fill="#2563eb" stroke="#2563eb" stroke-width="2.5"/><text x="110" y="65" text-anchor="middle" font-size="11" fill="#fff">B</text>
+  <circle cx="170" cy="60" r="13" fill="#fff" stroke="#8b98a9" stroke-width="2" stroke-dasharray="4 3"/><text x="170" y="65" text-anchor="middle" font-size="11" fill="var(--muted)">C</text>
+  <line x1="123" y1="60" x2="157" y2="60" stroke="#8b98a9" stroke-width="2" stroke-dasharray="4 3"/>
+  <rect x="74" y="18" width="72" height="22" rx="11" fill="#2563eb"/><text x="110" y="33" text-anchor="middle" font-size="11" fill="#fff" font-weight="700">HEAD→main</text>
+  <text x="170" y="95" text-anchor="middle" font-size="11" fill="var(--muted)">C 喺歷史消失（只可以本地咁做）</text>
+</svg></figure>
+<div class="ba-arrow">VS</div>
+<figure class="diagram"><span class="ba-cap">revert C（新增反向 commit）</span>
+<svg viewBox="0 0 340 110" width="340" role="img" aria-label="revert 圖">
+  <line x1="40" y1="60" x2="280" y2="60" stroke="#2563eb" stroke-width="3"/>
+  <circle cx="40" cy="60" r="13" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="40" y="65" text-anchor="middle" font-size="11" fill="var(--ink)">A</text>
+  <circle cx="120" cy="60" r="13" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="120" y="65" text-anchor="middle" font-size="11" fill="var(--ink)">B</text>
+  <circle cx="200" cy="60" r="13" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="200" y="65" text-anchor="middle" font-size="11" fill="var(--ink)">C</text>
+  <circle cx="280" cy="60" r="13" fill="#7c3aed" stroke="#7c3aed" stroke-width="2.5"/><text x="280" y="65" text-anchor="middle" font-size="11" fill="#fff">C'</text>
+  <rect x="242" y="18" width="76" height="22" rx="11" fill="#2563eb"/><text x="280" y="33" text-anchor="middle" font-size="11" fill="#fff" font-weight="700">HEAD→main</text>
+  <text x="280" y="95" text-anchor="middle" font-size="11" fill="#7c3aed">C' ＝ C 嘅反向改動</text>
+</svg></figure>
+</div>
+<div class="cb"><div class="cb-head">bash<button class="copy">複製</button></div><pre><code>git revert HEAD              # 撤銷最後一個 commit
+git revert a1b2c3d           # 撤銷指定 commit
+git revert HEAD~3..HEAD      # 撤銷最近 3 個（每個開一個 revert commit）
+git revert --no-commit HEAD  # 改動放落暫存區但唔即刻 commit，俾你一次過 commit 幾個 revert
+git revert -m 1 a1b2c3d      # 撤銷 merge commit（-m 1 指定以第一父線為主）</code></pre></div>
+<table class="flags">
+<tr><th>Flag</th><th>作用</th></tr>
+<tr><td><code>-e</code> / <code>--edit</code>（預設）</td><td>開編輯器改 revert message</td></tr>
+<tr><td><code>--no-edit</code></td><td>用預設 message 唔開編輯器</td></tr>
+<tr><td><code>-n</code> / <code>--no-commit</code></td><td>只將反向改動放入暫存區，唔自動 commit</td></tr>
+<tr><td><code>-m 1</code> / <code>--mainline 1</code></td><td>revert merge commit 時必填：以邊條父線為「主線」</td></tr>
+<tr><td><code>--continue</code> / <code>--abort</code></td><td>衝突時繼續 / 放棄</td></tr>
+</table>
+</div>
+
+<div class="cmd">
+<h3><span class="num">4</span><code>git clean</code> — 清除 untracked 檔案</h3>
+<div class="cb"><div class="cb-head">bash<button class="copy">複製</button></div><pre><code>git clean -n          # 預演：列出會刪咩（一定要做嘅步驟！）
+git clean -f          # 刪 untracked 檔案（force）
+git clean -fd         # 連 untracked 資料夾都刪
+git clean -fx         # 連 .gitignore 忽略咗嘅都刪（node_modules 都會冇埋）
+git clean -fdx        # 最深層大掃除＝回到「啱啱 clone」嘅狀態
+git clean -i          # 互動模式逐個揀
+git clean -n -e "*.log"  # 預演時排除某 pattern</code></pre></div>
+<table class="flags">
+<tr><th>Flag</th><th>作用</th></tr>
+<tr><td><code>-n</code> / <code>--dry-run</code></td><td>預演，唔真係刪（落 -f 之前必做）</td></tr>
+<tr><td><code>-f</code> / <code>--force</code></td><td>真係刪（冇 -f 預設會拒絕執行）</td></tr>
+<tr><td><code>-d</code></td><td>連資料夾都處理</td></tr>
+<tr><td><code>-x</code></td><td>連被 ignore 嘅檔案都刪</td></tr>
+<tr><td><code>-X</code></td><td><b>只</b>刪被 ignore 嘅檔案（保留一般 untracked）</td></tr>
+<tr><td><code>-i</code> / <code>--interactive</code></td><td>互動模式</td></tr>
+<tr><td><code>-e &lt;pattern&gt;</code> / <code>--exclude</code></td><td>排除某 pattern</td></tr>
+</table>
+<div class="danger"><span class="tag">危險</span>clean 刪嘅係 <b>untracked</b> 檔案——即係 Git 從來冇記錄過，<b>reflog 都救唔返</b>。永遠先 <code>git clean -n</code> 預演，確認無誤先落 <code>-f</code>。</div>
+</div>
+</section>
+
+<!-- ==================== REMOTE ==================== -->
+<section class="sec" id="remote">
+<h2 class="sec-title">遠端協作：<code>remote</code> / <code>fetch</code> / <code>pull</code> / <code>push</code><a class="anchor" href="#remote">#</a></h2>
+<p class="sec-lead">四個指令嘅分工：<code>remote</code> 管理連線、<code>fetch</code> 只下載資訊、<code>pull</code> 下載兼合併、<code>push</code> 上傳。</p>
+
+<div class="cmd">
+<h3><span class="num">1</span><code>git remote</code> — 管理遠端連線</h3>
+<div class="cb"><div class="cb-head">bash<button class="copy">複製</button></div><pre><code>git remote                    # 列出遠端名（通常得 origin）
+git remote -v                 # 連 URL 一齊列（verbose，好常用）
+git remote add origin https://github.com/user/repo.git   # 加遠端連線
+git remote add upstream https://github.com/original/repo.git  # fork 後加原作者個 repo
+git remote rename origin old-origin
+git remote rm upstream
+git remote set-url origin git@github.com:user/repo.git   # HTTPS 轉 SSH
+git remote show origin        # 詳細資訊：邊個分支追蹤邊個</code></pre></div>
+<table class="flags">
+<tr><th>子指令 / Flag</th><th>作用</th></tr>
+<tr><td><code>-v</code> / <code>--verbose</code></td><td>顯示 fetch 同 push 嘅 URL</td></tr>
+<tr><td><code>add &lt;名&gt; &lt;url&gt;</code></td><td>新增遠端</td></tr>
+<tr><td><code>rm &lt;名&gt;</code> / <code>remove</code></td><td>移除遠端連線（遠端追蹤分支都會刪）</td></tr>
+<tr><td><code>rename &lt;舊&gt; &lt;新&gt;</code></td><td>改名</td></tr>
+<tr><td><code>set-url &lt;名&gt; &lt;url&gt;</code></td><td>改 URL</td></tr>
+<tr><td><code>get-url &lt;名&gt;</code></td><td>睇 URL</td></tr>
+<tr><td><code>show &lt;名&gt;</code></td><td>詳細報告（分支對應、push/pull 設定）</td></tr>
+<tr><td><code>prune &lt;名&gt;</code></td><td>清走「遠端已刪、你仲留低」嘅追蹤分支</td></tr>
+</table>
+</div>
+
+<div class="cmd">
+<h3><span class="num">2</span><code>git fetch</code> — 只下載，唔郁你嘅嘢（安全！）</h3>
+<p class="lead">fetch 只會更新「遠端追蹤分支」（<code>origin/main</code> 嗰啲唯讀副本），<b>你嘅工作目錄同本地分支完全唔郁</b>。想知人哋改咗咩，先 fetch 再慢慢睇。</p>
+<div class="ba">
+<figure class="diagram"><span class="ba-cap">BEFORE</span>
+<svg viewBox="0 0 380 150" width="380" role="img" aria-label="fetch 之前">
+  <text x="20" y="18" font-size="12" font-weight="700" fill="var(--muted)">遠端</text>
+  <line x1="50" y1="34" x2="250" y2="34" stroke="#7c3aed" stroke-width="3"/>
+  <circle cx="50" cy="34" r="11" fill="#fff" stroke="#7c3aed" stroke-width="2.5"/><text x="50" y="38" text-anchor="middle" font-size="10" fill="var(--ink)">A</text>
+  <circle cx="150" cy="34" r="11" fill="#fff" stroke="#7c3aed" stroke-width="2.5"/><text x="150" y="38" text-anchor="middle" font-size="10" fill="var(--ink)">B</text>
+  <circle cx="250" cy="34" r="11" fill="#7c3aed" stroke="#7c3aed" stroke-width="2.5"/><text x="250" y="38" text-anchor="middle" font-size="10" fill="#fff">C</text>
+  <text x="300" y="38" font-size="11" fill="#7c3aed">← main</text>
+  <text x="20" y="70" font-size="12" font-weight="700" fill="var(--muted)">本地</text>
+  <line x1="50" y1="90" x2="150" y2="90" stroke="#2563eb" stroke-width="3"/>
+  <circle cx="50" cy="90" r="11" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="50" y="94" text-anchor="middle" font-size="10" fill="var(--ink)">A</text>
+  <circle cx="150" cy="90" r="11" fill="#2563eb" stroke="#2563eb" stroke-width="2.5"/><text x="150" y="94" text-anchor="middle" font-size="10" fill="#fff">B</text>
+  <text x="200" y="94" font-size="11" fill="#2563eb">← main, origin/main</text>
+  <text x="50" y="132" font-size="11.5" fill="var(--muted)">你仲唔知遠端多咗 C</text>
+</svg></figure>
+<div class="ba-arrow">➜</div>
+<figure class="diagram"><span class="ba-cap">AFTER：git fetch</span>
+<svg viewBox="0 0 380 150" width="380" role="img" aria-label="fetch 之後">
+  <text x="20" y="18" font-size="12" font-weight="700" fill="var(--muted)">遠端</text>
+  <line x1="50" y1="34" x2="250" y2="34" stroke="#7c3aed" stroke-width="3"/>
+  <circle cx="50" cy="34" r="11" fill="#fff" stroke="#7c3aed" stroke-width="2.5"/><text x="50" y="38" text-anchor="middle" font-size="10" fill="var(--ink)">A</text>
+  <circle cx="150" cy="34" r="11" fill="#fff" stroke="#7c3aed" stroke-width="2.5"/><text x="150" y="38" text-anchor="middle" font-size="10" fill="var(--ink)">B</text>
+  <circle cx="250" cy="34" r="11" fill="#7c3aed" stroke="#7c3aed" stroke-width="2.5"/><text x="250" y="38" text-anchor="middle" font-size="10" fill="#fff">C</text>
+  <text x="300" y="38" font-size="11" fill="#7c3aed">← main</text>
+  <text x="20" y="70" font-size="12" font-weight="700" fill="var(--muted)">本地</text>
+  <line x1="50" y1="90" x2="250" y2="90" stroke="#8b98a9" stroke-width="2.5"/>
+  <circle cx="50" cy="90" r="11" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="50" y="94" text-anchor="middle" font-size="10" fill="var(--ink)">A</text>
+  <circle cx="150" cy="90" r="11" fill="#2563eb" stroke="#2563eb" stroke-width="2.5"/><text x="150" y="94" text-anchor="middle" font-size="10" fill="#fff">B</text>
+  <circle cx="250" cy="90" r="11" fill="#fff" stroke="#8b98a9" stroke-width="2.5" stroke-dasharray="4 3"/><text x="250" y="94" text-anchor="middle" font-size="10" fill="var(--ink)">C</text>
+  <text x="290" y="94" font-size="11" fill="#8b98a9">← origin/main</text>
+  <text x="110" y="118" font-size="11" fill="#2563eb">← main（唔郁！）</text>
+  <text x="50" y="142" font-size="11.5" fill="var(--muted)">得返 origin/main 更新咗；你嘅 main 原封不動</text>
+</svg></figure>
+</div>
+<div class="cb"><div class="cb-head">bash<button class="copy">複製</button></div><pre><code>git fetch                  # 由 origin 更新所有追蹤分支
+git fetch upstream         # 由指定遠端更新
+git fetch --all            # 所有遠端一齊更新
+git fetch --prune          # 順便清走遠端已刪嘅追蹤分支（建議常開）
+git fetch -v               # verbose：顯示邊個分支有更新
+git fetch --dry-run        # 預演
+
+# fetch 之後想睇人哋改咗咩：
+git log HEAD..origin/main --oneline    # 遠端有但你冇嘅 commit
+git diff HEAD...origin/main            # 具體改動</code></pre></div>
+<table class="flags">
+<tr><th>Flag</th><th>作用</th></tr>
+<tr><td><code>--all</code></td><td>所有 remote 都 fetch</td></tr>
+<tr><td><code>--prune</code> / <code>-p</code></td><td>同步刪除本地已失效嘅遠端追蹤分支</td></tr>
+<tr><td><code>--tags</code> / <code>-t</code></td><td>連所有 tag 都 fetch</td></tr>
+<tr><td><code>-v</code> / <code>--verbose</code></td><td>詳細輸出</td></tr>
+<tr><td><code>--dry-run</code></td><td>預演</td></tr>
+<tr><td><code>--depth=&lt;n&gt;</code></td><td>（淺 clone 用）加深歷史</td></tr>
+<tr><td><code>--unshallow</code></td><td>將淺 clone 補返成完整歷史</td></tr>
+</table>
+<div class="tip"><span class="tag">貼士</span>想長期自動 prune：<code>git config --global fetch.prune true</code>。</div>
+</div>
+
+<div class="cmd">
+<h3><span class="num">3</span><code>git pull</code> ＝ fetch ＋ merge（預設）</h3>
+<div class="cb"><div class="cb-head">bash<button class="copy">複製</button></div><pre><code>git pull                    # = git fetch + git merge origin/main
+git pull --rebase           # = git fetch + git rebase origin/main（歷史直線）
+git pull --ff-only          # 只接受 fast-forward，否則拒絕（最保守）</code></pre></div>
+<figure class="diagram">
+<svg viewBox="0 0 700 210" width="700" role="img" aria-label="pull 兩種模式">
+  <text x="20" y="20" font-size="13" font-weight="700" fill="var(--ink)">情境：你本地有 D，遠端有 E，分岔咗</text>
+  <line x1="40" y1="50" x2="140" y2="50" stroke="#8b98a9" stroke-width="3"/>
+  <line x1="140" y1="50" x2="210" y2="26" stroke="#2563eb" stroke-width="3"/>
+  <line x1="140" y1="50" x2="210" y2="76" stroke="#7c3aed" stroke-width="3"/>
+  <circle cx="40" cy="50" r="10" fill="#fff" stroke="#8b98a9" stroke-width="2"/><text x="40" y="54" text-anchor="middle" font-size="9.5" fill="var(--ink)">B</text>
+  <circle cx="140" cy="50" r="10" fill="#fff" stroke="#8b98a9" stroke-width="2"/><text x="140" y="54" text-anchor="middle" font-size="9.5" fill="var(--ink)">C</text>
+  <circle cx="210" cy="26" r="10" fill="#2563eb" stroke="#2563eb" stroke-width="2"/><text x="210" y="30" text-anchor="middle" font-size="9.5" fill="#fff">D</text>
+  <circle cx="210" cy="76" r="10" fill="#7c3aed" stroke="#7c3aed" stroke-width="2"/><text x="210" y="80" text-anchor="middle" font-size="9.5" fill="#fff">E</text>
+  <text x="230" y="30" font-size="10.5" fill="#2563eb">← 你嘅 main</text>
+  <text x="230" y="80" font-size="10.5" fill="#7c3aed">← origin/main</text>
+  <!-- pull merge -->
+  <text x="60" y="122" font-size="12" font-weight="700" fill="var(--muted)">git pull（merge）</text>
+  <line x1="60" y1="160" x2="140" y2="160" stroke="#8b98a9" stroke-width="2.5"/>
+  <line x1="140" y1="160" x2="185" y2="142" stroke="#2563eb" stroke-width="2.5"/>
+  <line x1="140" y1="160" x2="185" y2="178" stroke="#7c3aed" stroke-width="2.5"/>
+  <line x1="185" y1="142" x2="225" y2="154" stroke="#2563eb" stroke-width="2.5"/>
+  <line x1="185" y1="178" x2="225" y2="166" stroke="#7c3aed" stroke-width="2.5"/>
+  <circle cx="60" cy="160" r="9" fill="#fff" stroke="#8b98a9" stroke-width="2"/>
+  <circle cx="140" cy="160" r="9" fill="#fff" stroke="#8b98a9" stroke-width="2"/>
+  <circle cx="185" cy="142" r="9" fill="#fff" stroke="#2563eb" stroke-width="2"/><text x="185" y="146" text-anchor="middle" font-size="8.5" fill="var(--ink)">D</text>
+  <circle cx="185" cy="178" r="9" fill="#fff" stroke="#7c3aed" stroke-width="2"/><text x="185" y="182" text-anchor="middle" font-size="8.5" fill="var(--ink)">E</text>
+  <circle cx="228" cy="160" r="10" fill="#7c3aed" stroke="#7c3aed" stroke-width="2"/><text x="228" y="164" text-anchor="middle" font-size="8.5" fill="#fff">M</text>
+  <text x="250" y="164" font-size="10.5" fill="var(--muted)">多個 merge commit</text>
+  <!-- pull rebase -->
+  <text x="400" y="122" font-size="12" font-weight="700" fill="var(--muted)">git pull --rebase</text>
+  <line x1="400" y1="160" x2="640" y2="160" stroke="#8b98a9" stroke-width="2.5"/>
+  <circle cx="400" cy="160" r="9" fill="#fff" stroke="#8b98a9" stroke-width="2"/>
+  <circle cx="480" cy="160" r="9" fill="#fff" stroke="#8b98a9" stroke-width="2"/>
+  <circle cx="560" cy="160" r="9" fill="#fff" stroke="#7c3aed" stroke-width="2"/><text x="560" y="164" text-anchor="middle" font-size="8.5" fill="var(--ink)">E</text>
+  <circle cx="640" cy="160" r="9" fill="#2563eb" stroke="#2563eb" stroke-width="2"/><text x="640" y="164" text-anchor="middle" font-size="8.5" fill="#fff">D'</text>
+  <text x="400" y="188" font-size="10.5" fill="var(--muted)">D 搬去 E 後面 → 一條直線</text>
+</svg>
+<figcaption><code>pull</code>（merge）會留低一個 M；<code>pull --rebase</code> 將你本地未 push 嘅 commit 搬去遠端最新之上，歷史乾淨啲</figcaption>
+</figure>
+<table class="flags">
+<tr><th>Flag</th><th>作用</th></tr>
+<tr><td><code>--rebase</code> / <code>-r</code></td><td>用 rebase 代替 merge 整合</td></tr>
+<tr><td><code>--no-rebase</code></td><td>明確用 merge（覆蓋 config）</td></tr>
+<tr><td><code>--ff-only</code></td><td>唔係 fast-forward 就拒絕（逼你先 rebase）</td></tr>
+<tr><td><code>--ff</code></td><td>可以 ff 就 ff（預設行為）</td></tr>
+<tr><td><code>--autostash</code></td><td>有未 commit 改動時自動 stash 再還原</td></tr>
+<tr><td><code>-v</code> / <code>--verbose</code>、<code>-q</code> / <code>--quiet</code></td><td>詳細 / 靜音</td></tr>
+<tr><td><code>--all</code></td><td>由所有 remote pull</td></tr>
+</table>
+<div class="tip"><span class="tag">貼士</span>想 <code>git pull</code> 永遠用 rebase：<code>git config --global pull.rebase true</code>。想永遠只准 ff：<code>git config --global pull.ff only</code>。</div>
+</div>
+
+<div class="cmd">
+<h3><span class="num">4</span><code>git push</code> — 上傳你嘅 commit</h3>
+<div class="cb"><div class="cb-head">bash<button class="copy">複製</button></div><pre><code>git push                        # 推去已設定嘅 upstream
+git push origin main            # 明確指定：遠端 origin，分支 main
+git push -u origin main         # 第一次推新分支：-u 順手設定追蹤關係
+git push origin feature:main    # refspec：本地 feature 推去遠端 main（少用）
+git push --tags                 # 連所有 tag 一齊推
+git push origin --delete old-branch   # 刪遠端分支
+git push origin :old-branch     # 同上（舊寫法：推「空」過去＝刪除）</code></pre></div>
+<div class="ba">
+<figure class="diagram"><span class="ba-cap">BEFORE：本地領先 2 個 commit</span>
+<svg viewBox="0 0 380 130" width="380" role="img" aria-label="push 之前">
+  <text x="20" y="18" font-size="12" font-weight="700" fill="var(--muted)">本地</text>
+  <line x1="50" y1="38" x2="290" y2="38" stroke="#2563eb" stroke-width="3"/>
+  <circle cx="50" cy="38" r="11" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="50" y="42" text-anchor="middle" font-size="10" fill="var(--ink)">A</text>
+  <circle cx="130" cy="38" r="11" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="130" y="42" text-anchor="middle" font-size="10" fill="var(--ink)">B</text>
+  <circle cx="210" cy="38" r="11" fill="#fff" stroke="#16a34a" stroke-width="2.5"/><text x="210" y="42" text-anchor="middle" font-size="10" fill="var(--ink)">C</text>
+  <circle cx="290" cy="38" r="11" fill="#16a34a" stroke="#16a34a" stroke-width="2.5"/><text x="290" y="42" text-anchor="middle" font-size="10" fill="#fff">D</text>
+  <text x="110" y="66" font-size="10.5" fill="#8b98a9">← origin/main</text>
+  <text x="252" y="66" font-size="10.5" fill="#2563eb">← main（新 C、D）</text>
+  <text x="20" y="92" font-size="12" font-weight="700" fill="var(--muted)">遠端</text>
+  <line x1="50" y1="108" x2="130" y2="108" stroke="#7c3aed" stroke-width="3"/>
+  <circle cx="50" cy="108" r="11" fill="#fff" stroke="#7c3aed" stroke-width="2.5"/><text x="50" y="112" text-anchor="middle" font-size="10" fill="var(--ink)">A</text>
+  <circle cx="130" cy="108" r="11" fill="#7c3aed" stroke="#7c3aed" stroke-width="2.5"/><text x="130" y="112" text-anchor="middle" font-size="10" fill="#fff">B</text>
+  <text x="165" y="112" font-size="10.5" fill="#7c3aed">← main</text>
+</svg></figure>
+<div class="ba-arrow">➜</div>
+<figure class="diagram"><span class="ba-cap">AFTER：git push</span>
+<svg viewBox="0 0 380 130" width="380" role="img" aria-label="push 之後">
+  <text x="20" y="18" font-size="12" font-weight="700" fill="var(--muted)">本地</text>
+  <line x1="50" y1="38" x2="290" y2="38" stroke="#2563eb" stroke-width="3"/>
+  <circle cx="50" cy="38" r="11" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="50" y="42" text-anchor="middle" font-size="10" fill="var(--ink)">A</text>
+  <circle cx="130" cy="38" r="11" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="130" y="42" text-anchor="middle" font-size="10" fill="var(--ink)">B</text>
+  <circle cx="210" cy="38" r="11" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="210" y="42" text-anchor="middle" font-size="10" fill="var(--ink)">C</text>
+  <circle cx="290" cy="38" r="11" fill="#2563eb" stroke="#2563eb" stroke-width="2.5"/><text x="290" y="42" text-anchor="middle" font-size="10" fill="#fff">D</text>
+  <text x="236" y="66" font-size="10.5" fill="#8b98a9">← main, origin/main 同步</text>
+  <text x="20" y="92" font-size="12" font-weight="700" fill="var(--muted)">遠端</text>
+  <line x1="50" y1="108" x2="290" y2="108" stroke="#7c3aed" stroke-width="3"/>
+  <circle cx="50" cy="108" r="11" fill="#fff" stroke="#7c3aed" stroke-width="2.5"/><text x="50" y="112" text-anchor="middle" font-size="10" fill="var(--ink)">A</text>
+  <circle cx="130" cy="108" r="11" fill="#fff" stroke="#7c3aed" stroke-width="2.5"/><text x="130" y="112" text-anchor="middle" font-size="10" fill="var(--ink)">B</text>
+  <circle cx="210" cy="108" r="11" fill="#fff" stroke="#7c3aed" stroke-width="2.5"/><text x="210" y="112" text-anchor="middle" font-size="10" fill="var(--ink)">C</text>
+  <circle cx="290" cy="108" r="11" fill="#7c3aed" stroke="#7c3aed" stroke-width="2.5"/><text x="290" y="112" text-anchor="middle" font-size="10" fill="#fff">D</text>
+</svg></figure>
+</div>
+<table class="flags">
+<tr><th>Flag</th><th>作用</th></tr>
+<tr><td><code>-u</code> / <code>--set-upstream</code></td><td>推之餘設定追蹤關係，之後 <code>git push</code> / <code>git pull</code> 唔使再寫參數</td></tr>
+<tr><td><code>--force</code> / <code>-f</code></td><td>強制覆蓋遠端歷史（危險，見下）</td></tr>
+<tr><td><code>--force-with-lease</code></td><td>「有條件」強推：遠端俾人更新過就拒絕（安全版 -f，推薦）</td></tr>
+<tr><td><code>--tags</code></td><td>連所有本地 tag 推埋</td></tr>
+<tr><td><code>--follow-tags</code></td><td>只推「指向已推 commit」嘅 annotated tag</td></tr>
+<tr><td><code>--delete &lt;分支&gt;</code></td><td>刪遠端分支</td></tr>
+<tr><td><code>--all</code></td><td>推晒所有本地分支</td></tr>
+<tr><td><code>-n</code> / <code>--dry-run</code></td><td>預演，唔真係推</td></tr>
+<tr><td><code>-v</code> / <code>--verbose</code>、<code>-q</code></td><td>詳細 / 靜音</td></tr>
+</table>
+<div class="danger"><span class="tag">危險</span><b><code>push --force</code> 會冇條件覆蓋遠端</b>：如果隊友啱啱 push 咗新 commit，會俾你直接冚走。<br>
+改用 <b><code>--force-with-lease</code></b>：Git 會檢查「遠端而家嘅狀態係咪同你預期一樣」，唔一樣就拒絕——rebase / amend 完要重推時必用。<br>
+再加 <code>git config --global push.useForceIfIncludes true</code> 會更穩陣。</div>
+<div class="note"><span class="tag">注意</span>push 俾人拒絕（non-fast-forward）＝遠端有你冇嘅 commit。正確做法：<code>git pull --rebase</code> 整合先，再 push。</div>
+</div>
+</section>
+
+<!-- ==================== STASH ==================== -->
+<section class="sec" id="stash">
+<h2 class="sec-title"><code>git stash</code> — 暫時收埋手頭上嘅改動<a class="anchor" href="#stash">#</a></h2>
+<p class="sec-lead">寫到一半要切分支救火？stash 幫你將未 commit 嘅改動收埋，搞掂先拎返出嚟。</p>
+<figure class="diagram">
+<svg viewBox="0 0 680 210" width="680" role="img" aria-label="stash 流程">
+  <rect x="20" y="30" width="190" height="70" rx="10" fill="none" stroke="#8b98a9" stroke-width="2"/>
+  <text x="115" y="24" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--muted)">工作目錄</text>
+  <text x="115" y="60" text-anchor="middle" font-size="12" fill="#ea580c">改咗一半嘅嘢 ✎</text>
+  <text x="115" y="78" text-anchor="middle" font-size="12" fill="#ea580c">未 commit</text>
+  <line x1="214" y1="65" x2="296" y2="65" stroke="#16a34a" stroke-width="2.5" marker-end="url(#arGr)"/>
+  <text x="255" y="54" text-anchor="middle" font-size="12.5" font-weight="700" fill="#16a34a">git stash</text>
+  <rect x="300" y="30" width="180" height="150" rx="10" fill="none" stroke="#7c3aed" stroke-width="2"/>
+  <text x="390" y="24" text-anchor="middle" font-size="12.5" font-weight="700" fill="#7c3aed">stash 疊（stack）</text>
+  <rect x="316" y="44" width="148" height="30" rx="7" fill="none" stroke="#7c3aed" stroke-width="1.5"/>
+  <text x="390" y="63" text-anchor="middle" font-size="11" fill="var(--ink)">stash@{0}：最新收入嘅</text>
+  <rect x="316" y="82" width="148" height="30" rx="7" fill="none" stroke="#7c3aed" stroke-width="1.5" opacity=".7"/>
+  <text x="390" y="101" text-anchor="middle" font-size="11" fill="var(--muted)">stash@{1}：之前嘅</text>
+  <rect x="316" y="120" width="148" height="30" rx="7" fill="none" stroke="#7c3aed" stroke-width="1.5" opacity=".45"/>
+  <text x="390" y="139" text-anchor="middle" font-size="11" fill="var(--muted)">stash@{2}：更舊嘅</text>
+  <text x="390" y="168" text-anchor="middle" font-size="11" fill="var(--muted)">後入先出（LIFO）</text>
+  <line x1="296" y1="140" x2="214" y2="90" stroke="#ea580c" stroke-width="2.5" marker-end="url(#arO)"/>
+  <text x="220" y="128" text-anchor="middle" font-size="12.5" font-weight="700" fill="#ea580c">git stash pop</text>
+  <text x="115" y="128" text-anchor="middle" font-size="11.5" fill="var(--muted)">改動倒返落工作目錄</text>
+</svg>
+<figcaption>stash 係一個疊：每次 <code>git stash</code> 放一層上去；<code>pop</code> 拎返最頂嗰層出嚟兼刪走，<code>apply</code> 只拎唔刪</figcaption>
+</figure>
+<div class="cb"><div class="cb-head">bash<button class="copy">複製</button></div><pre><code>git stash                       # 收埋改動（已追蹤檔案）
+git stash push -m "做到一半嘅登入"  # 加埋註解，list 嗰陣易認
+git stash -u                    # 連 untracked 新檔都收埋
+git stash -a                    # 連 ignore 咗嘅檔都收埋（all）
+git stash list                  # 睇有幾多層
+git stash show                  # 最頂嗰層改咗邊啲檔案（摘要）
+git stash show -p stash@{1}     # 睇完整 diff
+git stash pop                   # 拎返最頂嗰層，兼由 stash 刪走
+git stash apply stash@{1}       # 拎指定嗰層，stash 保留
+git stash drop stash@{1}        # 刪走指定嗰層
+git stash clear                 # 清空成個 stash
+git stash branch hotfix         # 由 stash 開條新分支（攞唔返嚟時嘅救星）
+git stash -p                    # 互動模式：揀住收邊啲 hunk</code></pre></div>
+<table class="flags">
+<tr><th>子指令 / Flag</th><th>作用</th></tr>
+<tr><td><code>push -m "訊息"</code></td><td>stash 兼加描述</td></tr>
+<tr><td><code>-u</code> / <code>--include-untracked</code></td><td>連 untracked 檔案</td></tr>
+<tr><td><code>-a</code> / <code>--all</code></td><td>連被 ignore 嘅檔案</td></tr>
+<tr><td><code>-p</code> / <code>--patch</code></td><td>互動揀 hunk</td></tr>
+<tr><td><code>-k</code> / <code>--keep-index</code></td><td>已暫存嘅嘢唔郁，只 stash 未暫存部分</td></tr>
+<tr><td><code>list</code></td><td>列出所有 stash</td></tr>
+<tr><td><code>show [-p]</code></td><td>睇內容（-p 顯示 diff）</td></tr>
+<tr><td><code>pop</code> vs <code>apply</code></td><td>pop 用完即刪；apply 保留 stash 副本</td></tr>
+<tr><td><code>branch &lt;名&gt;</code></td><td>以 stash 內容開新分支</td></tr>
+<tr><td><code>drop</code> / <code>clear</code></td><td>刪一層 / 全刪</td></tr>
+</table>
+<div class="warn"><span class="tag">伏位</span>隔咗幾個星期先 apply 舊 stash，檔案可能已大改而出現衝突——解完衝突後 stash 唔會自動 drop，要手動 <code>git stash drop</code>。</div>
+</section>
+
+<!-- ==================== TAG ==================== -->
+<section class="sec" id="tag">
+<h2 class="sec-title"><code>git tag</code> — 幫重要時刻打上標記<a class="anchor" href="#tag">#</a></h2>
+<p class="sec-lead">Tag ＝ 永不移動嘅分支指標，多數用嚟標版本號（v1.0.0 之類）。分「輕量」同「附註」兩種。</p>
+<figure class="diagram">
+<svg viewBox="0 0 640 130" width="640" role="img" aria-label="兩種 tag">
+  <line x1="60" y1="70" x2="400" y2="70" stroke="#2563eb" stroke-width="3"/>
+  <circle cx="60" cy="70" r="13" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="60" y="75" text-anchor="middle" font-size="11" fill="var(--ink)">A</text>
+  <circle cx="230" cy="70" r="13" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="230" y="75" text-anchor="middle" font-size="11" fill="var(--ink)">B</text>
+  <circle cx="400" cy="70" r="13" fill="#2563eb" stroke="#2563eb" stroke-width="2.5"/><text x="400" y="75" text-anchor="middle" font-size="11" fill="#fff">C</text>
+  <rect x="200" y="16" width="60" height="22" rx="6" fill="none" stroke="#8b98a9" stroke-width="2" stroke-dasharray="4 3"/>
+  <text x="230" y="31" text-anchor="middle" font-size="11" fill="var(--muted)">v0.9</text>
+  <line x1="230" y1="38" x2="230" y2="55" stroke="#8b98a9" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <text x="230" y="110" text-anchor="middle" font-size="11" fill="var(--muted)">輕量 tag：淨係個名指住 commit</text>
+  <rect x="365" y="16" width="70" height="22" rx="6" fill="#f05133"/>
+  <text x="400" y="31" text-anchor="middle" font-size="11" fill="#fff" font-weight="700">v1.0</text>
+  <line x1="400" y1="38" x2="400" y2="55" stroke="#f05133" stroke-width="2"/>
+  <text x="400" y="110" text-anchor="middle" font-size="11" fill="var(--muted)">附註 tag：有 message、作者、日期（推薦）</text>
+</svg>
+<figcaption>發佈版本用附註 tag（<code>-a</code>），之後 <code>git show v1.0</code> 先睇到完整發佈資訊</figcaption>
+</figure>
+<div class="cb"><div class="cb-head">bash<button class="copy">複製</button></div><pre><code>git tag v1.0                      # 輕量 tag（淨係個名）
+git tag -a v1.0 -m "首個正式版"     # 附註 tag（推薦：有 message）
+git tag -a v1.1 a1b2c3d -m "修補版" # 幫舊 commit 補打 tag
+git tag                           # 列出所有 tag
+git tag -l "v1.*"                 # pattern 篩選
+git tag -n                        # 連註解一齊列出
+git show v1.0                     # 睇 tag 指向嘅 commit ＋ tag 資訊
+git tag -d v0.9                   # 刪本地 tag
+git push origin v1.0              # 推單個 tag 上遠端
+git push --tags                   # 推晒所有 tag
+git push origin --delete v0.9     # 刪遠端 tag
+git checkout v1.0                 # 去嗰個版本（detached HEAD）
+git switch -c hotfix-v1.0.1 v1.0  # 由 tag 開分支做修補</code></pre></div>
+<table class="flags">
+<tr><th>Flag</th><th>作用</th></tr>
+<tr><td><code>-a</code> / <code>--annotate</code></td><td>建立附註 tag（有 message、作者、日期）</td></tr>
+<tr><td><code>-m "訊息"</code></td><td>tag 訊息（唔加會開編輯器）</td></tr>
+<tr><td><code>-l "pattern"</code> / <code>--list</code></td><td>篩選列出</td></tr>
+<tr><td><code>-n</code></td><td>列出時顯示註解頭一行</td></tr>
+<tr><td><code>-d</code> / <code>--delete</code></td><td>刪除本地 tag</td></tr>
+<tr><td><code>-f</code> / <code>--force</code></td><td>強制覆蓋已存在嘅 tag 名</td></tr>
+<tr><td><code>-s</code> / <code>--sign</code></td><td>GPG 簽名 tag</td></tr>
+<tr><td><code>-v &lt;tag&gt;</code> / <code>--verify</code></td><td><b>注意：呢度 -v 係「驗證簽名」</b>，唔係 verbose！</td></tr>
+<tr><td><code>--sort=-version:refname</code></td><td>按版本號排序（新→舊）</td></tr>
+</table>
+<div class="note"><span class="tag">注意</span>預設 <code>git push</code> <b>唔會</b>推 tag，要明確 <code>git push origin &lt;tag&gt;</code> 或 <code>--tags</code>。</div>
+</section>
+
+<!-- ==================== ADVANCED ==================== -->
+<section class="sec" id="advanced">
+<h2 class="sec-title">進階指令：cherry-pick / bisect / worktree / submodule<a class="anchor" href="#advanced">#</a></h2>
+<p class="sec-lead">未必日日用，但關鍵時刻好救命。</p>
+
+<div class="cmd">
+<h3><span class="num">1</span><code>git cherry-pick</code> — 摘某一個 commit 過嚟</h3>
+<div class="ba">
+<figure class="diagram"><span class="ba-cap">BEFORE</span>
+<svg viewBox="0 0 400 140" width="400" role="img" aria-label="cherry-pick 之前">
+  <line x1="40" y1="70" x2="140" y2="70" stroke="#2563eb" stroke-width="3"/>
+  <line x1="140" y1="70" x2="240" y2="70" stroke="#2563eb" stroke-width="3"/>
+  <line x1="140" y1="70" x2="220" y2="110" stroke="#16a34a" stroke-width="3"/>
+  <line x1="220" y1="110" x2="300" y2="110" stroke="#16a34a" stroke-width="3"/>
+  <circle cx="40" cy="70" r="12" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="40" y="75" text-anchor="middle" font-size="10.5" fill="var(--ink)">A</text>
+  <circle cx="140" cy="70" r="12" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="140" y="75" text-anchor="middle" font-size="10.5" fill="var(--ink)">B</text>
+  <circle cx="240" cy="70" r="12" fill="#2563eb" stroke="#2563eb" stroke-width="2.5"/><text x="240" y="75" text-anchor="middle" font-size="10.5" fill="#fff">C</text>
+  <circle cx="220" cy="110" r="12" fill="#fff" stroke="#16a34a" stroke-width="2.5"/><text x="220" y="115" text-anchor="middle" font-size="10.5" fill="var(--ink)">D</text>
+  <circle cx="300" cy="110" r="12" fill="#16a34a" stroke="#16a34a" stroke-width="2.5"/><text x="300" y="115" text-anchor="middle" font-size="10.5" fill="#fff">E</text>
+  <rect x="196" y="16" width="88" height="20" rx="10" fill="#2563eb"/><text x="240" y="30" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">HEAD→main</text>
+  <text x="300" y="132" text-anchor="middle" font-size="10" fill="#16a34a">feature：想要 E 嘅修復</text>
+</svg></figure>
+<div class="ba-arrow">➜</div>
+<figure class="diagram"><span class="ba-cap">AFTER：git cherry-pick E</span>
+<svg viewBox="0 0 400 140" width="400" role="img" aria-label="cherry-pick 之後">
+  <line x1="40" y1="70" x2="330" y2="70" stroke="#2563eb" stroke-width="3"/>
+  <line x1="140" y1="70" x2="220" y2="110" stroke="#16a34a" stroke-width="3"/>
+  <line x1="220" y1="110" x2="300" y2="110" stroke="#16a34a" stroke-width="3"/>
+  <circle cx="40" cy="70" r="12" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="40" y="75" text-anchor="middle" font-size="10.5" fill="var(--ink)">A</text>
+  <circle cx="140" cy="70" r="12" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="140" y="75" text-anchor="middle" font-size="10.5" fill="var(--ink)">B</text>
+  <circle cx="240" cy="70" r="12" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="240" y="75" text-anchor="middle" font-size="10.5" fill="var(--ink)">C</text>
+  <circle cx="330" cy="70" r="12" fill="#7c3aed" stroke="#7c3aed" stroke-width="2.5"/><text x="330" y="75" text-anchor="middle" font-size="10.5" fill="#fff">E'</text>
+  <circle cx="220" cy="110" r="12" fill="#fff" stroke="#16a34a" stroke-width="2.5"/><text x="220" y="115" text-anchor="middle" font-size="10.5" fill="var(--ink)">D</text>
+  <circle cx="300" cy="110" r="12" fill="#16a34a" stroke="#16a34a" stroke-width="2.5"/><text x="300" y="115" text-anchor="middle" font-size="10.5" fill="#fff">E</text>
+  <rect x="290" y="16" width="88" height="20" rx="10" fill="#2563eb"/><text x="334" y="30" text-anchor="middle" font-size="10" fill="#fff" font-weight="700">HEAD→main</text>
+  <text x="330" y="95" text-anchor="middle" font-size="10" fill="#7c3aed">E 嘅複製品</text>
+</svg></figure>
+</div>
+<div class="cb"><div class="cb-head">bash<button class="copy">複製</button></div><pre><code>git cherry-pick a1b2c3d        # 摘一個 commit 入嚟而家分支
+git cherry-pick A..E           # 摘 A 之後到 E 嘅連續範圍（唔包 A）
+git cherry-pick -n a1b2c3d     # --no-commit：改動放入暫存區，唔即刻 commit
+git cherry-pick -x a1b2c3d     # message 尾自動加 "(cherry picked from ...)" 方便追溯
+git cherry-pick -e a1b2c3d     # 開編輯器改 message
+git cherry-pick -m 1 a1b2c3d   # 摘 merge commit（-m 指定主父線）
+git cherry-pick --continue     # 解完衝突繼續
+git cherry-pick --abort        # 放棄</code></pre></div>
+</div>
+
+<div class="cmd">
+<h3><span class="num">2</span><code>git bisect</code> — 對分搜尋搵「邊個 commit 引入咗個 bug」</h3>
+<p class="lead">100 個 commit 入面有一個引入咗 bug，逐個 checkout 要試 100 次；bisect 用對分搜尋，<b>log₂(100) ≈ 7 次</b>就搵到。</p>
+<figure class="diagram">
+<svg viewBox="0 0 720 130" width="720" role="img" aria-label="bisect 對分搜尋">
+  <line x1="40" y1="70" x2="680" y2="70" stroke="#8b98a9" stroke-width="3"/>
+  <circle cx="40" cy="70" r="12" fill="#16a34a" stroke="#16a34a" stroke-width="2.5"/><text x="40" y="100" text-anchor="middle" font-size="10.5" fill="#16a34a">v1.0 good</text>
+  <circle cx="200" cy="70" r="12" fill="#fff" stroke="#8b98a9" stroke-width="2.5" stroke-dasharray="4 3"/><text x="200" y="100" text-anchor="middle" font-size="10.5" fill="var(--muted)">? 試中間</text>
+  <circle cx="360" cy="70" r="12" fill="#fff" stroke="#8b98a9" stroke-width="2.5" stroke-dasharray="4 3"/><text x="360" y="100" text-anchor="middle" font-size="10.5" fill="var(--muted)">? 再對分</text>
+  <circle cx="440" cy="70" r="12" fill="#dc2626" stroke="#dc2626" stroke-width="2.5"/><text x="440" y="100" text-anchor="middle" font-size="10.5" fill="#dc2626">壞人喺度！</text>
+  <circle cx="680" cy="70" r="12" fill="#dc2626" stroke="#dc2626" stroke-width="2.5" opacity=".55"/><text x="680" y="100" text-anchor="middle" font-size="10.5" fill="#dc2626">HEAD bad</text>
+  <text x="360" y="30" text-anchor="middle" font-size="12" fill="var(--muted)">每答一次 good / bad，搜尋範圍就縮一半</text>
+</svg>
+<figcaption>bisect 自動 checkout 中間嘅 commit，你答 good 定 bad，範圍每次縮一半</figcaption>
+</figure>
+<div class="cb"><div class="cb-head">bash<button class="copy">複製</button></div><pre><code>git bisect start               # 開始
+git bisect bad                 # 而家 HEAD 係壞嘅
+git bisect good v1.0           # v1.0 係好嘅
+# → Git 自動 checkout 中間 commit，你測試完答：
+git bisect good                # 呢個好 → 範圍縮一半
+git bisect bad                 # 呢個壞 → 範圍縮另一半
+# ...重複幾次，Git 話你知 "xxx is the first bad commit"
+git bisect reset               # 完事，返返去原來分支
+
+# 懶人全自動版：寫個測試 script，exit 0 = good，非 0 = bad
+git bisect run npm test
+git bisect log                 # 睇返成個搜尋過程</code></pre></div>
+</div>
+
+<div class="cmd">
+<h3><span class="num">3</span><code>git worktree</code> — 一個 repo 同時開幾個工作目錄</h3>
+<p class="lead">想一邊寫 feature、一邊改 main 嘅 urgent bug，唔想 stash 嚟 stash 去？worktree 俾你同一個 repo 喺唔同資料夾 checkout 唔同分支。</p>
+<div class="cb"><div class="cb-head">bash<button class="copy">複製</button></div><pre><code>git worktree add ../hotfix-dir hotfix-branch   # 開個新資料夾裝住另一條分支
+git worktree list                              # 列出所有 worktree
+cd ../hotfix-dir                               # 入去就係另一條分支嘅世界
+git worktree remove ../hotfix-dir              # 用完刪走
+git worktree prune                             # 清理手動刪咗嘅殘留記錄</code></pre></div>
+<div class="tip"><span class="tag">貼士</span>跑慢吞吞嘅測試嗰陣，開個 worktree 喺隔籬資料夾繼續做嘢，唔使等。</div>
+</div>
+
+<div class="cmd">
+<h3><span class="num">4</span><code>git submodule</code> — repo 入面巢狀另一個 repo</h3>
+<div class="cb"><div class="cb-head">bash<button class="copy">複製</button></div><pre><code>git submodule add https://github.com/lib/lib.git vendor/lib   # 加入子模組
+git commit -m "加入 lib 子模組"
+# 其他人 clone 完，子模組係空嘅，要：
+git submodule init                 # 初始化
+git submodule update               # 下載內容
+git submodule update --init --recursive   # 一句搞掂（多層巢狀都包）
+# 或者 clone 嗰陣一步到位：
+git clone --recurse-submodules &lt;url&gt;</code></pre></div>
+</div>
+
+<div class="cmd">
+<h3><span class="num">5</span>其他值得識嘅指令</h3>
+<table class="flags">
+<tr><th>指令</th><th>作用</th></tr>
+<tr><td><code>git archive --format=zip -o out.zip HEAD</code></td><td>將某個 commit 打包成 zip（唔包 .git，俾人用但唔俾歷史）</td></tr>
+<tr><td><code>git describe --tags</code></td><td>顯示「最近嘅 tag＋距離」，如 <code>v1.0-3-g3f2a1b9</code>（v1.0 之後 3 個 commit）</td></tr>
+<tr><td><code>git gc</code></td><td>垃圾回收：壓縮整理 .git，repo 變慢時行一次</td></tr>
+<tr><td><code>git fsck --full</code></td><td>檢查 .git 完整性、搵「失聯」物件</td></tr>
+<tr><td><code>git count-objects -v</code></td><td>睇 .git 佢用咗幾多位</td></tr>
+<tr><td><code>git rev-parse HEAD</code></td><td>輸出某 ref 嘅完整 hash（寫 script 用）</td></tr>
+<tr><td><code>git ls-files</code></td><td>列出所有被追蹤檔案</td></tr>
+<tr><td><code>git whatchanged</code></td><td>舊式 log，連檔案改動（多數用 log --stat 代替）</td></tr>
+<tr><td><code>git mergetool</code></td><td>開視覺化工具解衝突</td></tr>
+<tr><td><code>git update-index --assume-unchanged &lt;檔案&gt;</code></td><td>叫 Git 暫時當某檔案冇改過（本地 config 檔常用）</td></tr>
+</table>
+</div>
+</section>
+
+<!-- ==================== APPENDIX ==================== -->
+<section class="sec" id="appendix">
+<h2 class="sec-title">附錄：HEAD~ vs HEAD^、兩點 vs 三點<a class="anchor" href="#appendix">#</a></h2>
+
+<div class="cmd">
+<h3><span class="num">1</span><code>~</code>（tilde）同 <code>^</code>（caret）嘅分別</h3>
+<p class="lead">兩個都係「相對定位」：<code>~n</code> 沿主線向上行 n 代；<code>^n</code> 揀第 n 個父 commit（merge commit 先有多個父）。</p>
+<figure class="diagram">
+<svg viewBox="0 0 620 180" width="620" role="img" aria-label="tilde vs caret">
+  <line x1="60" y1="90" x2="200" y2="90" stroke="#2563eb" stroke-width="3"/>
+  <line x1="200" y1="90" x2="300" y2="90" stroke="#2563eb" stroke-width="3"/>
+  <line x1="200" y1="90" x2="280" y2="130" stroke="#16a34a" stroke-width="3"/>
+  <line x1="280" y1="130" x2="310" y2="102" stroke="#16a34a" stroke-width="3"/>
+  <circle cx="60" cy="90" r="13" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="60" y="95" text-anchor="middle" font-size="11" fill="var(--ink)">A</text>
+  <circle cx="200" cy="90" r="13" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="200" y="95" text-anchor="middle" font-size="11" fill="var(--ink)">B</text>
+  <circle cx="320" cy="90" r="14" fill="#7c3aed" stroke="#7c3aed" stroke-width="2.5"/><text x="320" y="95" text-anchor="middle" font-size="11" fill="#fff">M</text>
+  <circle cx="280" cy="130" r="13" fill="#fff" stroke="#16a34a" stroke-width="2.5"/><text x="280" y="135" text-anchor="middle" font-size="11" fill="var(--ink)">F</text>
+  <text x="320" y="45" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--ink)">M = HEAD</text>
+  <text x="420" y="60" text-anchor="start" font-size="12.5" fill="var(--ink)">HEAD^  = B（第一父）</text>
+  <text x="420" y="85" text-anchor="start" font-size="12.5" fill="var(--ink)">HEAD^2 = F（第二父）</text>
+  <text x="420" y="110" text-anchor="start" font-size="12.5" fill="var(--ink)">HEAD~  = B（向上一格）</text>
+  <text x="420" y="135" text-anchor="start" font-size="12.5" fill="var(--ink)">HEAD~2 = A（向上兩格）</text>
+  <text x="420" y="160" text-anchor="start" font-size="12.5" fill="var(--ink)">HEAD~2 永遠行主線，唔理分支</text>
+</svg>
+<figcaption><code>~</code> 睇「深度」、<code>^</code> 睇「第幾個父母」。可以組合：<code>HEAD^2~1</code> ＝ F 嘅上一格</figcaption>
+</figure>
+</div>
+
+<div class="cmd">
+<h3><span class="num">2</span><code>A..B</code> 同 <code>A...B</code> 嘅分別</h3>
+<table class="flags">
+<tr><th>用喺</th><th><code>A..B</code>（兩點）</th><th><code>A...B</code>（三點）</th></tr>
+<tr><td><code>git log</code></td><td>B 有、A 冇嘅 commit</td><td>兩邊各自獨有嘅 commit（對稱差集）</td></tr>
+<tr><td><code>git diff</code></td><td>直接比較 A 同 B 兩點</td><td>比較「分岔點（merge base）」同 B —— 即「B 呢條分支帶嚟嘅改動」</td></tr>
+</table>
+<div class="cb"><div class="cb-head">bash<button class="copy">複製</button></div><pre><code>git log main..feature --oneline    # feature 有、main 冇嘅 commit（PR 入面嘅嘢）
+git log main...feature --oneline   # 兩邊各自新嘅 commit
+git log --left-right --oneline main...feature   # 用 &lt; / &gt; 標示嚟自邊邊
+git diff main...feature            # 睇 feature 分支帶嚟嘅改動（推薦）
+git diff main..feature             # 連 main 自己新加嘅嘢嘅「反向」都包埋，易誤會</code></pre></div>
+</div>
+</section>
+
+<!-- ==================== CHEATSHEET ==================== -->
+<section class="sec" id="cheatsheet">
+<h2 class="sec-title">Cheat Sheet 速查表<a class="anchor" href="#cheatsheet">#</a></h2>
+<p class="sec-lead">打印出嚟貼喺檯頭都得。按情境搵指令。</p>
+<div class="cmd">
+<h3>情境 → 指令</h3>
+<div class="checklist">
+<ul class="tight">
+<li>新開 repo：<code>git init -b main</code></li>
+<li>複製遠端 repo：<code>git clone &lt;url&gt;</code></li>
+<li>睇狀態：<code>git status -sb</code></li>
+<li>暫存改動：<code>git add -A</code> / 揀住加 <code>git add -p</code></li>
+<li>提交：<code>git commit -m "訊息"</code></li>
+<li>改上一個 commit：<code>git commit --amend</code></li>
+<li>睇歷史：<code>git log --oneline --graph --all</code></li>
+<li>睇改動：<code>git diff</code> / <code>git diff --staged</code></li>
+<li>開分支兼切換：<code>git switch -c &lt;名&gt;</code></li>
+<li>切分支：<code>git switch &lt;名&gt;</code> / 返上個 <code>git switch -</code></li>
+<li>合併：<code>git merge &lt;分支&gt;</code>（保歷史 <code>--no-ff</code>）</li>
+<li>更新分支起點：<code>git rebase main</code></li>
+<li>整理 commit：<code>git rebase -i HEAD~3</code></li>
+<li>unstage：<code>git restore --staged &lt;檔案&gt;</code></li>
+<li>丟棄檔案改動：<code>git restore &lt;檔案&gt;</code></li>
+<li>撤銷 commit 留改動：<code>git reset --soft HEAD~1</code></li>
+<li>撤銷 commit 唔要改動：<code>git reset --hard HEAD~1</code></li>
+<li>安全撤銷已 push commit：<code>git revert &lt;commit&gt;</code></li>
+<li>刪 untracked 檔：<code>git clean -nd</code> 先預演</li>
+<li>睇遠端：<code>git remote -v</code></li>
+<li>下載遠端資訊：<code>git fetch --all --prune</code></li>
+<li>拉落嚟合併：<code>git pull --rebase</code></li>
+<li>推上去：<code>git push -u origin &lt;分支&gt;</code></li>
+<li>rebase 後重推：<code>git push --force-with-lease</code></li>
+<li>收埋手頭嘢：<code>git stash -u -m "訊息"</code></li>
+<li>拎返出嚟：<code>git stash pop</code></li>
+<li>打版本標記：<code>git tag -a v1.0 -m "訊息"</code></li>
+<li>推 tag：<code>git push origin v1.0</code></li>
+<li>搵邊個寫嘅：<code>git blame -L 10,20 &lt;檔案&gt;</code></li>
+<li>救返誤刪 commit：<code>git reflog</code> → <code>git reset --hard &lt;hash&gt;</code></li>
+<li>搵引入 bug 嘅 commit：<code>git bisect start</code></li>
+<li>摘單個 commit：<code>git cherry-pick &lt;hash&gt;</code></li>
+<li>唔記得點用：<code>git &lt;指令&gt; -h</code> / <code>git help &lt;指令&gt;</code></li>
+</ul>
+</div>
+<h3>每日工作流（feature branch flow）</h3>
+<div class="cb"><div class="cb-head">bash<button class="copy">複製</button></div><pre><code># 1. 由最新 main 開分支
+git switch main && git pull --rebase
+git switch -c feature/login
+
+# 2. 做嘢，密密 commit
+git add -p && git commit -m "加入登入表單"
+
+# 3. push 前執靚歷史（本地未 push 先做！）
+git rebase -i main
+
+# 4. 推上遠端開 PR
+git push -u origin feature/login
+
+# 5. PR 合併後清理
+git switch main && git pull --prune
+git branch -d feature/login
+git push origin --delete feature/login   # 遠端分支都刪埋</code></pre></div>
+<div class="tip"><span class="tag">最後一句</span>Git 心法：<b>密密 commit、慢慢 push</b>。本地 commit 係免費嘅安全網——有 reflog 喺度，大膽試都得。</div>
+</div>
+</section>
+
+</main>
+<button id="topBtn" title="返去頂部">↑ 頂部</button>
+<script>
+// theme toggle
+(function(){
+  var html=document.documentElement, btn=document.getElementById('themeBtn');
+  var saved=localStorage.getItem('gt-theme');
+  if(saved) html.setAttribute('data-theme',saved);
+  function label(){btn.textContent=html.getAttribute('data-theme')==='dark'?'☀️ 淺色模式':'🌙 深色模式';}
+  label();
+  btn.addEventListener('click',function(){
+    var next=html.getAttribute('data-theme')==='dark'?'light':'dark';
+    html.setAttribute('data-theme',next);localStorage.setItem('gt-theme',next);label();
+  });
+})();
+// copy buttons
+document.querySelectorAll('.copy').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    var pre=btn.closest('.cb').querySelector('pre');
+    var text=pre.innerText;
+    function done(){btn.textContent='已複製 ✓';setTimeout(function(){btn.textContent='複製';},1500);}
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done);}
+    else{var ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();done();}
+  });
+});
+// scrollspy
+(function(){
+  var links=[].slice.call(document.querySelectorAll('#sidenav a'));
+  var map={};
+  links.forEach(function(a){map[a.getAttribute('href').slice(1)]=a;});
+  var obs=new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){
+        links.forEach(function(a){a.classList.remove('active');});
+        var a=map[e.target.id]; if(a) a.classList.add('active');
+      }
+    });
+  },{rootMargin:'-10% 0px -80% 0px'});
+  document.querySelectorAll('section.sec').forEach(function(s){obs.observe(s);});
+})();
+// nav filter
+document.getElementById('navfilter').addEventListener('input',function(){
+  var q=this.value.trim().toLowerCase();
+  document.querySelectorAll('#sidenav a').forEach(function(a){
+    a.classList.toggle('hidden',q&&a.textContent.toLowerCase().indexOf(q)===-1);
+  });
+});
+// back to top
+(function(){
+  var b=document.getElementById('topBtn');
+  window.addEventListener('scroll',function(){b.classList.toggle('show',window.scrollY>600);});
+  b.addEventListener('click',function(){window.scrollTo({top:0,behavior:'smooth'});});
+})();
+</script>
+</body>
+</html>
